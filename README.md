@@ -1,3 +1,3 @@
-# cs256_hw2
+# CS256 Homework 2
 
-TBD
+An SVM that recognizes Zener Cards using the S-K algorithm.
