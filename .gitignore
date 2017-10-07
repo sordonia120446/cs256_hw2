@@ -40,3 +40,8 @@ tmtagsHistory
 *.sublime-workspace
 .bundle
 
+# Virtual Env #
+# #################
+venv/
+env.sh
+
