@@ -19,7 +19,7 @@ def poly_kernel(x, x_i, p=4, c=1):
 
 
 def calculate_x_prime(x):
-    x_prime = []
+    x_prime = x
     lam = 0
     return x_prime, lam
 
