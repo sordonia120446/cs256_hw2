@@ -3,9 +3,11 @@ Train an SVM on a polynomial-kernel transformed dataset.
 :authors Jason, Nick, Sam
 """
 
-
 import sys
+import os
+
 import numpy as np
+from PIL import Image
 
 
 def poly_kernel(x, x_i, p=4, c=1):
@@ -54,6 +56,40 @@ def sk_training_step():
     pass
 
 
+def rep_data(img_path):
+    """
+    The contents of this image as a sequence object containing pixel values. The sequence object is flattened, so that values for line one follow directly after the values of line zero, and so on.
+
+    Note that the sequence object returned by this method is an internal PIL data type, which only supports certain sequence operations. To convert it to an ordinary sequence (e.g. for printing), use list(im.getdata()).
+
+    :param img_path: the path to image file
+    :returns numpy arrays: A vector representation of the image.
+    """
+    img = Image.open(img_path)
+    arr = np.array(list(img.getdata()))
+
+    return arr
+
+
+def classify_pixels(img_arr):
+    """
+    Pixel value 255 corresponds to white.
+
+    :param img_arr type <numpy arr> 
+    :returns: two numpy vectors of white & non-white pixels
+    """
+
+    white_pixels = []
+    nonwhite_pixels = []
+    for (x, y), value in np.ndenumerate(arr):
+        if value == 255:
+            white_pixels.add((x,y))
+        else:
+            nonwhite_pixels.add((x, y))
+
+    return white_pixels, nonwhite_pixels
+
+
 def main():
     num_args = len(sys.argv)
     if num_args != 6:
@@ -71,5 +107,12 @@ def main():
     # check if num_examples is a positive int
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
+
+    # For testing image -> numpy arr
+    img_folder = 'zener_shapes'
+
+    img_path = os.path.join(img_folder, 'S.jpg')
+    img_v = rep_data(img_path)
+
