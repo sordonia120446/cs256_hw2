@@ -9,9 +9,10 @@ import random
 
 from PIL import Image, ImageDraw, ImageOps
 
-MAX_SIZE_OFFSET = 10
+# Pos/neg in either direction
+MAX_SIZE_OFFSET = 5
 MAX_POS_OFFSET = 5
-MAX_ROTATION = 360
+MAX_ROTATION = 180
 
 DRAW_NOISE = True
 
@@ -21,9 +22,9 @@ def draw_shape(bg, shape, pos_offset=0, size_offset=0, rotation=0):
 
     :param bg: Background image to be drawn to
     :param shape: Shape to draw, e.g. 'O', 'P', 'Q', 'S', 'W'
-    :param pos_offset: Max amount to randomly change shape position
-    :param size_offset: Max amount to randomly change shape size
-    :param rotation: Max amount to randomly rotate shape
+    :param pos_offset: Amount to change shape position
+    :param size_offset: Amount to change shape size
+    :param rotation: Amount to rotate shape
     '''
 
     file_path = os.path.join(os.getcwd(), 'zener_shapes', shape + '.jpg')
@@ -76,11 +77,11 @@ def generate_zener_cards(folder_name, num_examples):
 
     shapes = ['O', 'P', 'Q', 'S', 'W']
     for n in range(0, num_examples):
-        card = Image.new('1', (25, 25), 1)
+        card = Image.new('L', (25, 25), 255)
 
-        size_offset = random.randint(0, MAX_SIZE_OFFSET)
+        size_offset = random.randint(-MAX_SIZE_OFFSET, MAX_SIZE_OFFSET)
         pos_offset = random.randint(-MAX_POS_OFFSET, MAX_POS_OFFSET)
-        rotation = random.randint(0, MAX_ROTATION)
+        rotation = random.randint(-MAX_ROTATION, MAX_ROTATION)
 
         shape = random.choice(shapes)
         draw_shape(card, shape, pos_offset=pos_offset, size_offset=size_offset, rotation=rotation)
