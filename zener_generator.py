@@ -1,15 +1,31 @@
+'''
+Generate 25x25 Zener Cards as png files.
+
+:authors Jason, Nick, Sam
+'''
+
 import os, sys
 import random
 
 from PIL import Image, ImageDraw, ImageOps
 
 MAX_SIZE_OFFSET = 10
-MAX_POS_OFFSET = 5 # Pos/neg
+MAX_POS_OFFSET = 5
 MAX_ROTATION = 360
 
 DRAW_NOISE = True
 
 def draw_shape(bg, shape, pos_offset=0, size_offset=0, rotation=0):
+    '''
+    Draw a Zener Card shape.
+
+    :param bg: Background image to be drawn to
+    :param shape: Shape to draw, e.g. 'O', 'P', 'Q', 'S', 'W'
+    :param pos_offset: Max amount to randomly change shape position
+    :param size_offset: Max amount to randomly change shape size
+    :param rotation: Max amount to randomly rotate shape
+    '''
+
     file_path = os.path.join(os.getcwd(), 'zener_shapes', shape + '.jpg')
 
     try:
@@ -22,6 +38,14 @@ def draw_shape(bg, shape, pos_offset=0, size_offset=0, rotation=0):
     bg.paste(0, box=((bg.size[0] - mask.size[0]) / 2 + pos_offset, (bg.size[1] - mask.size[1]) / 2 + pos_offset), mask=mask)
 
 def draw_noise(im, density=0.02, iterations=50):
+    '''
+    Draws noise (ellipsoids) at random points on the image with a given probability.
+
+    :param im: The image to draw the noise on
+    :param density: The probability that an ellipsoid will be drawn
+    :param iterations: The number of times to run the noise algorithm
+    '''
+
     draw = ImageDraw.Draw(im)
 
     for n in range(0, iterations):
@@ -35,6 +59,13 @@ def draw_noise(im, density=0.02, iterations=50):
             draw.ellipse((x1, y1) + (x2, y2), fill=0, outline=0)
 
 def generate_zener_cards(folder_name, num_examples):
+    '''
+    Generate nny number of Zener Cards.
+
+    :param folder_name: The name of the output folder
+    :param num_examples: The number of training examples to generate
+    '''
+
     path = os.path.join(os.getcwd(), folder_name)
 
     if not os.path.exists(path):
