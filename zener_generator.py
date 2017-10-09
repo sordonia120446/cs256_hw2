@@ -4,7 +4,8 @@ Generate 25x25 Zener Cards as png files.
 :authors Jason, Nick, Sam
 '''
 
-import os, sys
+import os
+import argparse
 import random
 
 from PIL import Image, ImageDraw, ImageOps
@@ -34,7 +35,7 @@ def draw_shape(bg, shape, pos_offset=0, size_offset=0, rotation=0):
     except IOError:
         print 'Shape not found'
 
-    mask = ImageOps.invert(src).rotate(rotation).resize((bg.size[0] - size_offset, bg.size[1] - size_offset)).convert('1')
+    mask = ImageOps.invert(src).rotate(rotation).resize((bg.size[0] + size_offset, bg.size[1] + size_offset)).convert('1')
 
     bg.paste(0, box=((bg.size[0] - mask.size[0]) / 2 + pos_offset, (bg.size[1] - mask.size[1]) / 2 + pos_offset), mask=mask)
 
@@ -59,7 +60,7 @@ def draw_noise(im, density=0.02, iterations=50):
 
             draw.ellipse((x1, y1) + (x2, y2), fill=0, outline=0)
 
-def generate_zener_cards(folder_name, num_examples):
+def generate_zener_cards(args):
     '''
     Generate nny number of Zener Cards.
 
@@ -67,7 +68,7 @@ def generate_zener_cards(folder_name, num_examples):
     :param num_examples: The number of training examples to generate
     '''
 
-    path = os.path.join(os.getcwd(), folder_name)
+    path = os.path.join(os.getcwd(), args.folder_name)
 
     if not os.path.exists(path):
         os.mkdir(path)
@@ -76,7 +77,7 @@ def generate_zener_cards(folder_name, num_examples):
             os.remove(os.path.join(path, filename))
 
     shapes = ['O', 'P', 'Q', 'S', 'W']
-    for n in range(0, num_examples):
+    for n in range(0, args.num_examples):
         card = Image.new('L', (25, 25), 255)
 
         size_offset = random.randint(-MAX_SIZE_OFFSET, MAX_SIZE_OFFSET)
@@ -92,7 +93,26 @@ def generate_zener_cards(folder_name, num_examples):
         filename = '{}_{}.png'.format(n + 1, shape)
         card.save(os.path.join(path, filename))
 
-if len(sys.argv) != 3:
-    raise Exception('Incorrect number of parameters')
-else:
-    generate_zener_cards(sys.argv[1], int(sys.argv[2]))
+
+# CLARGS
+parser = argparse.ArgumentParser(
+    description='Generate a number of 25x25 Zener cards.',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog='For further questions, please consult the README.'
+)
+
+parser.add_argument(
+    'folder_name',
+    help='The name of the output folder.'
+)
+parser.add_argument(
+    'num_examples',
+    help='The number of images to generate.',
+    type=int
+)
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+
+    generate_zener_cards(args)
