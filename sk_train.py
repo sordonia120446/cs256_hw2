@@ -3,7 +3,7 @@ Train an SVM on a polynomial-kernel transformed dataset.
 :authors Jason, Nick, Sam
 """
 
-import sys
+import argparse
 import os
 
 import numpy as np
@@ -37,10 +37,12 @@ def sk_algorithm(x):
     max_updates = 1000  # from input
     
     while error < epsilon or num_updates is max_updates:
-        sk_training_step()
+        # TODO add weight update
+        continue
 
+    # TODO feed vector input here instead of iterating through it
     g = 0
-    for i in range(len(x)):
+    for i in xrange(len(x)):
         y = 0
         if x[i] in x_prime:
             y = 0
@@ -48,12 +50,6 @@ def sk_algorithm(x):
         A = 0  # placeholder
         B = 0  # placeholder
         g += alpha * y * poly_kernel(x[i], x_prime[i]) + (B - A) / 2
-
-
-def sk_training_step():
-    # from slide
-    # S-K Algorithm - Kernel Version
-    pass
 
 
 def rep_data(img_path):
@@ -81,7 +77,7 @@ def classify_pixels(img_arr):
 
     white_pixels = []
     nonwhite_pixels = []
-    for (x, y), value in np.ndenumerate(arr):
+    for (x, y), value in np.ndenumerate(img_arr):
         if value == 255:
             white_pixels.add((x,y))
         else:
@@ -90,25 +86,43 @@ def classify_pixels(img_arr):
     return white_pixels, nonwhite_pixels
 
 
-def main():
-    num_args = len(sys.argv)
-    if num_args != 6:
-        print 'INCORRECT PARAMETERS'
-        print sys.argv
-        return
+############################################################
+#CLARGS
+############################################################
+parser = argparse.ArgumentParser(
+    description='One-off Bioinformatics Analytics Scripts:\n\
+    Calcs:\n\
+        1) Calculate absolute genus distribution counts\n\
+        2) Calculate percent genus distribution counts + genus-counts details',
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog='For further questions, please consult the README.'
+)
 
-    epsilon = sys.argv[1]
-    max_updates = sys.argv[2]
-    class_letter = sys.argv[3]
-    folder_name = sys.argv[4]
-    num_examples = sys.argv[5]
-
-    # check if folder_name has valid images
-    # check if num_examples is a positive int
+# Add CLARGS
+parser.add_argument(
+    'epsilon',
+    help='Epsilon error tolerance.'
+)
+parser.add_argument(
+    'max_updates',
+    help='Training steps/epochs.'
+)
+parser.add_argument(
+    'class_letter',
+    help='Specify the class letter [P, W, Q, S].'
+)
+parser.add_argument(
+    'model_file_name',
+    help='Filename to output trained model.'
+)
+parser.add_argument(
+    'train_folder_name',
+    help='Locating of training data.'
+)
 
 
 if __name__ == '__main__':
-    main()
+    args = parser.parse_args()
 
     # For testing image -> numpy arr
     img_folder = 'zener_shapes'
