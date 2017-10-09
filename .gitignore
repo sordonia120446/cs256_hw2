@@ -45,3 +45,10 @@ tmtagsHistory
 venv/
 env.sh
 
+# Virtual Env #
+# #################
+data/
+test/
+trained_model.json
+trained_model.txt
+
