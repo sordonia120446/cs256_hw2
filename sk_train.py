@@ -62,6 +62,9 @@ def init_algo(args):
             X_minus.append(rep_data(img_path))
             I_minus.append(ind)
 
+    if len(X_plus) < 1:
+        raise Exception('NO DATA')
+
     if len(X_plus) != len(I_plus) or len(X_minus) != len(I_minus):
         raise Exception('[ERROR] Init filter is not working')
 
