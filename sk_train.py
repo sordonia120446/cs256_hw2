@@ -4,6 +4,7 @@ Train an SVM on a polynomial-kernel transformed dataset.
 """
 
 import argparse
+import glob
 import os
 
 import numpy as np
@@ -29,10 +30,39 @@ def calc_centroid(X):
     Calculate centroid (lambda) of convex hull.
 
     :param X: the list of numpy vectors in input space
-    :returns numpy vector:
+    :returns type <numpy vector>:
     """
     k = len(X)
     return (1/k)*sum(X)
+
+
+def init_algo(args):
+    """
+    Initialize the preliminaries for S-K algo learning of SVM
+
+    :param args: the CLARGS from user input
+    :returns type 4 lists: The lists of X's, I's, Y's (all +/-'s)
+    """
+
+    img_dir = os.path.join(args.train_folder_name, '*.png')
+
+    X_plus = []
+    X_minus = []
+    I_plus = []
+    I_minus = []
+
+    for img_path in glob.glob(img_dir):
+        f_name = os.path.splitext(os.path.basename(img_path))
+        ind, letter = f_name[0].split('_')
+
+        if letter.upper() == args.class_letter.upper():
+            X_plus.append(letter.upper())
+            I_plus.append(ind)
+        else:
+            X_minus.append(letter.upper())
+            I_minus.append(ind)
+
+    return X_plus, X_minus, I_plus, I_minus
 
 
 def sk_algorithm(x):
@@ -130,12 +160,8 @@ parser.add_argument(
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    # For testing image -> numpy arr
-    img_folder = args.train_folder_name  #'zener_shapes'
+    # Init
+    X_plus, X_minus, I_plus, I_minus = init_algo(args)
+    print len(X_plus) == len(I_plus)
 
-    img_path = os.path.join(
-        img_folder,
-        '{}.jpg'.format(args.train_folder_name)
-    )
-    img_v = rep_data(img_path)
 
