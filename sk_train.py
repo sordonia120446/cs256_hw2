@@ -125,8 +125,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # For testing image -> numpy arr
-    img_folder = 'zener_shapes'
+    img_folder = args.train_folder_name  #'zener_shapes'
 
-    img_path = os.path.join(img_folder, 'S.jpg')
+    img_path = os.path.join(
+        img_folder,
+        '{}.jpg'.format(args.train_folder_name)
+    )
     img_v = rep_data(img_path)
 
