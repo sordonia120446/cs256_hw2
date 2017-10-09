@@ -41,7 +41,7 @@ def init_algo(args):
     Initialize the preliminaries for S-K algo learning of SVM
 
     :param args: the CLARGS from user input
-    :returns type 4 lists: The lists of X's, I's, Y's (all +/-'s)
+    :returns type dict: The dict of X's, I's, Y's (all +/-'s)
     """
 
     img_dir = os.path.join(args.train_folder_name, '*.png')
@@ -68,33 +68,36 @@ def init_algo(args):
     if len(X_plus) != len(I_plus) or len(X_minus) != len(I_minus):
         raise Exception('[ERROR] Init filter is not working')
 
-    return X_plus, X_minus, I_plus, I_minus
+    ret = {
+        'X_plus': X_plus,
+        'X_minus': X_minus,
+        'I_plus': I_plus,
+        'I_minus': I_minus
+    }
+
+    return ret
 
 
-def sk_algorithm(x):
-    # x is the set of input vectors
-    # x prime is scaled input vectors with lambda
-    x_prime, lam = calculate_x_prime(x)
+def sk_algorithm(input_data, args):
+    """
+    Find support vectors of scaled convex hulls for X+ & X-.
 
-    error = 0.1  # placeholder
-    num_updates = 0  # placeholder
-    epsilon = 0.01  # from input
-    max_updates = 1000  # from input
-    
-    while error < epsilon or num_updates is max_updates:
-        # TODO add weight update
-        continue
+    :param x: the input numpy vector from an img
+    :args: the CLARGS from user input
+    :returns type tuple: X_prime_plus support vectors, X_prime_minus support vectors
+    """
+    # TODO implement scaling logic
 
-    # TODO feed vector input here instead of iterating through it
-    g = 0
-    for i in xrange(len(x)):
-        y = 0
-        if x[i] in x_prime:
-            y = 0
-        alpha = 1
-        A = 0  # placeholder
-        B = 0  # placeholder
-        g += alpha * y * poly_kernel(x[i], x_prime[i]) + (B - A) / 2
+    # TODO define kernel outputs A~E
+
+    # TODO stop condition
+
+    # TODO update condition
+
+    X_plus_svs = []
+    X_minus_svs = []
+
+    return X_plus_svs, X_minus_svs
 
 
 def rep_data(img_path):
@@ -167,7 +170,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Init
-    X_plus, X_minus, I_plus, I_minus = init_algo(args)
-    print X_plus
+    input_data = init_algo(args)  # dict
 
+    # Run algo
+    sk_algorithm(input_data, args)
 
