@@ -56,11 +56,14 @@ def init_algo(args):
         ind, letter = f_name[0].split('_')
 
         if letter.upper() == args.class_letter.upper():
-            X_plus.append(letter.upper())
+            X_plus.append(rep_data(img_path))
             I_plus.append(ind)
         else:
-            X_minus.append(letter.upper())
+            X_minus.append(rep_data(img_path))
             I_minus.append(ind)
+
+    if len(X_plus) != len(I_plus) or len(X_minus) != len(I_minus):
+        raise Exception('[ERROR] Init filter is not working')
 
     return X_plus, X_minus, I_plus, I_minus
 
@@ -162,6 +165,6 @@ if __name__ == '__main__':
 
     # Init
     X_plus, X_minus, I_plus, I_minus = init_algo(args)
-    print len(X_plus) == len(I_plus)
+    print X_plus
 
 
