@@ -99,10 +99,7 @@ def classify_pixels(img_arr):
 #CLARGS
 ############################################################
 parser = argparse.ArgumentParser(
-    description='One-off Bioinformatics Analytics Scripts:\n\
-    Calcs:\n\
-        1) Calculate absolute genus distribution counts\n\
-        2) Calculate percent genus distribution counts + genus-counts details',
+    description='S-K Learning algo for SVM',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog='For further questions, please consult the README.'
 )
