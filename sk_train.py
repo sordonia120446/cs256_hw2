@@ -24,6 +24,17 @@ def calculate_x_prime(x):
     pass
 
 
+def calc_centroid(X):
+    """
+    Calculate centroid (lambda) of convex hull.
+
+    :param X: the list of numpy vectors in input space
+    :returns numpy vector:
+    """
+    k = len(X)
+    return (1/k)*sum(X)
+
+
 def sk_algorithm(x):
     # x is the set of input vectors
     # x prime is scaled input vectors with lambda
