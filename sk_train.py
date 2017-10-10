@@ -38,7 +38,7 @@ def calc_centroid(X):
     return (1/k)*sum(X)
 
 
-def calc_mi(x_k, d):
+def calc_mi(x_k, p):
     """
     Calculate the m_i to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
@@ -46,23 +46,23 @@ def calc_mi(x_k, d):
     This is for the positive examples I_plus.
 
     :param x_k: the k-th elem of x (pos ex)
-    :param d: dict of alphas & letters
+    :param p: params dict of alphas & letters
     :returns type float: the m_i value
     """
 
-    D_i = poly_kernel(d['x_i'], x_k)
-    E_i = poly_kernel(d['x_j'], x_k)
+    D_i = poly_kernel(p['x_i'], x_k)
+    E_i = poly_kernel(p['x_j'], x_k)
 
-    m_i_num = float(D_i - E_i + d['B'] - d['C'])
+    m_i_num = float(D_i - E_i + p['B'] - p['C'])
     try:
-        m_i_denom = math.sqrt(d['A'] + d['B'] -2*d['C'])
+        m_i_denom = math.sqrt(p['A'] + p['B'] -2*p['C'])
     except ValueError:
         raise Exception('Check the stop condition denom for m_i')
 
     return m_i_num/m_i_denom
 
 
-def calc_mj(x_k, d):
+def calc_mj(x_k, p):
     """
     Calculate the m_j to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
@@ -70,16 +70,16 @@ def calc_mj(x_k, d):
     This is for the negative examples I_minus.
 
     :param x_k: the k-th elem of x (neg ex)
-    :param d: dict of alphas & letters
+    :param p: params dict of alphas & letters
     :returns type float: the m_i value
     """
 
-    D_i = poly_kernel(d['x_i'], x_k)
-    E_i = poly_kernel(d['x_j'], x_k)
+    D_i = poly_kernel(p['x_i'], x_k)
+    E_i = poly_kernel(p['x_j'], x_k)
 
-    m_i_num = float(-D_i + E_i + d['A'] - d['C'])
+    m_i_num = float(-D_i + E_i + p['A'] - p['C'])
     try:
-        m_i_denom = math.sqrt(d['A'] + d['B'] -2*d['C'])
+        m_i_denom = math.sqrt(p['A'] + p['B'] -2*p['C'])
     except ValueError:
         raise Exception('Check the stop condition denom for m_i')
 
@@ -200,45 +200,54 @@ def should_stop(d, p, epsilon):
     """
 
     # Get min vals
-    m_is = []
-    for pos_ex in d['X_plus']:
-        m_is.append(calc_mi(pos_ex, p))
+    m_is = {}
+    for pos_ex, pos_ind in zip(d['X_plus'], d['I_plus']):
+        m_is[(calc_mi(pos_ex, p))] = pos_ind
 
-    m_js = []
-    for neg_ex in d['X_minus']:
-        m_js.append(calc_mj(neg_ex, p))
+    m_js = {}
+    for neg_ex, neg_ind in zip(d['X_minus'], d['I_minus']):
+        m_js[calc_mj(neg_ex, p)] = neg_ind
 
-    m_i_min = min(m_is)
-    m_j_min = min(m_js)
+    m_i_min = min(m_is.keys())
+    m_j_min = min(m_js.keys())
+
+    # Define x_t and its corresponding metadata
+    if m_is[m_i_min] < m_js[m_j_min]:
+        x_t = {
+            'm_t': m_i_min,  # see calc_mi
+            't_ind': m_is[m_i_min],  # index val of min
+            'category': 'pos'  # positive category
+        }
+    else:
+        x_t = {
+            'm_t': m_j_min,  # see calc_mi
+            't': m_js[m_j_min],  # index val of min
+            'category': 'neg'  # negative category
+        }
 
     # Calc deltas
     err_msg = 'Attempted negative sqrt for {} ex stop condition check'
     try:
-        m_i_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - m_i_min
+        m_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - x_t['m_t']
     except ValueError:
-        raise Exception(err_msg.format('pos'))
-
-    try:
-        m_j_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - m_j_min
-    except ValueError:
-        raise Exception(err_msg.format('neg'))
+        raise Exception(err_msg.format(x_t))
 
     # Compare to epsilon
-    if m_i_delta < epsilon and m_j_delta < epsilon:
-        print 'Success!'
-        return True
+    if m_delta < epsilon:
+        print 'Stop condition met!:  {}'.format(m_delta)
+        return True, x_t
 
-    return False
+    return False, x_t
 
 
-def adapt(d, p):
+def adapt(d, p, x_t):
     """
     :param d: dict of X's & I's from sample space
     :param p: dict of alphas & letters
     :returns type dict: new dict of alphs & letters
     """
     # TODO update condition
-    return None
+    return p
 
 
 def sk_algorithm(input_data, args):
@@ -262,10 +271,13 @@ def sk_algorithm(input_data, args):
             print params
 
         # Check for stop condition
-        if should_stop(input_data, params, args.epsilon):
+        is_done, x_t = should_stop(input_data, params, args.epsilon)
+        if is_done:
             return params
 
-        params = adapt(input_data, params)
+        params = adapt(input_data, params, x_t)
+
+    print '\nTrained for {}'.format(args.max_updates)
 
     return params
 
@@ -321,10 +333,12 @@ parser = argparse.ArgumentParser(
 # Add CLARGS
 parser.add_argument(
     'epsilon',
+    type=float,
     help='Epsilon error tolerance.'
 )
 parser.add_argument(
     'max_updates',
+    type=int,
     help='Training steps/epochs.'
 )
 parser.add_argument(
