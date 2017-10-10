@@ -5,6 +5,7 @@ Train an SVM on a polynomial-kernel transformed dataset.
 
 import argparse
 import glob
+import math
 import os
 
 import numpy as np
@@ -21,10 +22,6 @@ def poly_kernel(x, x_i, p=4, c=1):
     return (np.dot(x_t, x_i) + c)**p
 
 
-def calculate_x_prime(x):
-    pass
-
-
 def calc_centroid(X):
     """
     Calculate centroid (lambda) of convex hull.
@@ -34,6 +31,24 @@ def calc_centroid(X):
     """
     k = len(X)
     return (1/k)*sum(X)
+
+
+def calc_mi(d):
+    """
+    Calculate the m_i to find the one closest to being within epsilon
+    of the correct side of the hyperplane.  Important for stop condition.
+
+    :param d: dict of alphas & letters
+    :returns type float: the m_i value
+    """
+
+    m_i_num = float(d['D_i'] - d['E_i'] + d['B'] - d['C'])
+    try:
+        m_i_denom = math.sqrt(d['A'] + d['B'] -2*d['C'])
+    except ValueError:
+        raise Exception('Check the stop condition denom for m_i')
+
+    return m_i_num/m_i_denom
 
 
 def init_data(args):
@@ -80,19 +95,6 @@ def init_data(args):
     return ret
 
 
-def training_step(data, args, index):
-    """
-    :param input_data: dict of X's & I's
-    :param args: CLARGS from user input
-    :returns type <numpy vector>:
-    """
-
-    # TODO check for stop condition
-
-    # TODO update condition
-    return None
-
-
 def sk_init(data):
     """
     Step 1: Initialization of s-k algo for kernel version.
@@ -114,6 +116,9 @@ def sk_init(data):
     # Negative vector
     x_j1 = data['X_minus'][0]
     j1 = data['I_minus'][0]
+
+    print 'Positive vector:  {}'.format(x_i1)
+    print 'Negative vector:  {}'.format(x_j1)
 
     # Set alpha's to one for support vector "guesses"
     alpha_i[0] = 1
@@ -137,7 +142,22 @@ def sk_init(data):
         'E_i': E_i
     }
 
+    print ret
+
     return ret
+
+
+def training_step(d, args, index):
+    """
+    :param d: dict of alphas & letters
+    :param args: CLARGS from user input
+    :returns type <numpy vector>:
+    """
+
+    # TODO check for stop condition
+
+    # TODO update condition
+    return None
 
 
 def sk_algorithm(input_data, args):
@@ -157,7 +177,7 @@ def sk_algorithm(input_data, args):
         if i % 1000 == 0:
             print 'On training step {}'.format(i)
 
-        update_results = training_step(input_data, args, i)
+        update_results = training_step(init_params, args, i)
 
         # TODO stop condition
 
@@ -180,7 +200,7 @@ def rep_data(img_path):
     img = Image.open(img_path)
     arr = np.array(list(img.getdata()), int)
 
-    return arr
+    return arr/255 # normalize to 1's for white; 0's otherwise
 
 
 def classify_pixels(img_arr):
