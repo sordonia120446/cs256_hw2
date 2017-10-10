@@ -36,7 +36,7 @@ def calc_centroid(X):
     return (1/k)*sum(X)
 
 
-def init_algo(args):
+def init_data(args):
     """
     Initialize the preliminaries for S-K algo learning of SVM
 
@@ -75,6 +75,8 @@ def init_algo(args):
         'I_minus': I_minus
     }
 
+    print 'Data inputs initialized'
+
     return ret
 
 
@@ -84,14 +86,58 @@ def training_step(data, args, index):
     :param args: CLARGS from user input
     :returns type <numpy vector>:
     """
+
+    # TODO check for stop condition
+
+    # TODO update condition
+    return None
+
+
+def sk_init(data):
+    """
+    Step 1: Initialization of s-k algo for kernel version.
+    Defines alpha_i & alpha_j, along with A~E.
+
+    :param input_data: the dict input data for +/-'s.
+    :returns type dict: alphas & letters
+    """
+    ret = {}
+
     # Define alpha
     alpha_i = np.zeros(len(data['X_plus']), dtype=np.int)
     alpha_j = np.zeros(len(data['X_minus']), dtype=np.int)
 
-    # TODO define kernel outputs A~E
-    #A = poly_kernel(
+    # Positive vector
+    x_i1 = data['X_plus'][0]
+    i1 = data['I_plus'][0]
 
-    # TODO update condition
+    # Negative vector
+    x_j1 = data['X_minus'][0]
+    j1 = data['I_minus'][0]
+
+    # Set alpha's to one for support vector "guesses"
+    alpha_i[0] = 1
+    alpha_j[0] = 1
+
+    # Define A~B
+    A = poly_kernel(x_i1, x_i1)
+    B = poly_kernel(x_j1, x_j1)
+    C = poly_kernel(x_i1, x_j1)
+    D_i = poly_kernel(x_i1, x_i1)
+    E_i = poly_kernel(x_i1, x_j1)
+
+    # Add to dict
+    ret = {
+        'alpha_i': alpha_i,
+        'alpha_j': alpha_j,
+        'A': A,
+        'B': B,
+        'C': C,
+        'D_i': D_i,
+        'E_i': E_i
+    }
+
+    return ret
 
 
 def sk_algorithm(input_data, args):
@@ -104,9 +150,13 @@ def sk_algorithm(input_data, args):
     """
     # TODO implement scaling logic
 
-    # Init Step
+    # Initialization
+    init_params = sk_init(input_data)
 
     for i in xrange(int(args.max_updates)):
+        if i % 1000 == 0:
+            print 'On training step {}'.format(i)
+
         update_results = training_step(input_data, args, i)
 
         # TODO stop condition
@@ -188,7 +238,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Init
-    input_data = init_algo(args)  # dict
+    input_data = init_data(args)  # dict
 
     # Run algo
     sk_algorithm(input_data, args)
