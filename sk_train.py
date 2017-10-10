@@ -27,15 +27,49 @@ def poly_kernel(x, x_i, p=4, c=1):
     return (np.dot(x_t, x_i) + c)**p
 
 
-def calc_centroid(X):
+def calc_lambda(X_plus, X_minus):
     """
-    Calculate centroid (lambda) of convex hull.
+    Calculate scaling factor (lambda) of convex hull.
 
-    :param X: the list of numpy vectors in input space
-    :returns type <numpy vector>:
+    :param X_plus: the list of numpy vectors that are positive training examples
+    :param X_minus: the list of numpy vectors that are negative training examples
+    :returns type <float>:
     """
-    k = len(X)
-    return (1/k)*sum(X)
+
+    m_plus = np.array([])  # positive centroid
+    m_minus = np.array([])  # negative centroid
+
+    # calculate m_plus and m_minus
+    for i in xrange(25 * 25):
+        m_plus_i = 0
+        for X_plus_i in X_plus:
+            m_plus_i += X_plus_i
+
+        m_minus_i = 0
+        for X_minus_i in X_minus:
+            m_minus_i += X_minus_i
+
+        m_plus_i /= len(X_plus)
+        m_minus_i /= len(X_minus)
+        m_plus = m_plus.append(m_plus, m_plus_i)
+        m_minus = m_minus.append(m_minus, m_minus_i)
+
+    # calculate r from m_plus and m_minus
+    r = np.linalg.norm(m_plus - m_minus)
+
+    # calculate r_plus
+    r_pluses = []
+    for X_plus_i in X_plus:
+        r_pluses.append(np.linalg.norm(X_plus_i - m_plus))
+    r_plus = max(r_pluses)
+
+    # calculate r_minus
+    r_minuses = []
+    for X_minus_i in X_minus:
+        r_minuses.append(np.linalg.norm(X_minus_i - m_minus))
+    r_minus = max(r_minuses)
+
+    return 0.5 * r / (r_plus + r_minus)  # lambda <= r / (r+ + r-)
 
 
 def calc_mi(x_k, p):
