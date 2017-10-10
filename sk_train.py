@@ -199,54 +199,76 @@ def should_stop(d, p, epsilon):
     :returns type bool: True if stop condition met; otherwise, False
     """
 
-    # Get min vals
+    """
+    Get min vals
+    NB: m_is & m_js are indexed by their m-values and store
+    their corresponding indices as well as x_vector.
+    """
     m_is = {}
     for pos_ex, pos_ind in zip(d['X_plus'], d['I_plus']):
-        m_is[(calc_mi(pos_ex, p))] = pos_ind
+        m_is[(calc_mi(pos_ex, p))] = {
+            'ind': pos_ind,
+            'x': pos_ex
+        }
 
     m_js = {}
     for neg_ex, neg_ind in zip(d['X_minus'], d['I_minus']):
-        m_js[calc_mj(neg_ex, p)] = neg_ind
+        m_js[calc_mj(neg_ex, p)] = {
+            'ind': neg_ind,
+            'x': neg_ex
+        }
 
     m_i_min = min(m_is.keys())
     m_j_min = min(m_js.keys())
 
     # Define x_t and its corresponding metadata
     if m_is[m_i_min] < m_js[m_j_min]:
-        x_t = {
+        ret = {
+            'category': 'pos',  # positive category
             'm_t': m_i_min,  # see calc_mi
-            't_ind': m_is[m_i_min],  # index val of min
-            'category': 'pos'  # positive category
+            't_ind': m_is[m_i_min]['ind'],  # index val of min
+            'x_t': m_is[m_i_min]['x']  # support vector
         }
     else:
-        x_t = {
+        ret = {
+            'category': 'neg',  # negative category
             'm_t': m_j_min,  # see calc_mi
             't': m_js[m_j_min],  # index val of min
-            'category': 'neg'  # negative category
+            'x_t': m_js[m_j_min]['x']  # support vector
         }
 
     # Calc deltas
     err_msg = 'Attempted negative sqrt for {} ex stop condition check'
     try:
-        m_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - x_t['m_t']
+        m_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - ret['m_t']
     except ValueError:
-        raise Exception(err_msg.format(x_t))
+        raise Exception(err_msg.format(ret))
 
     # Compare to epsilon
     if m_delta < epsilon:
         print 'Stop condition met!:  {}'.format(m_delta)
-        return True, x_t
+        return True, ret
 
-    return False, x_t
+    return False, ret
 
 
 def adapt(d, p, x_t):
     """
-    :param d: dict of X's & I's from sample space
-    :param p: dict of alphas & letters
-    :returns type dict: new dict of alphs & letters
+    :param d: input data dict of X's & I's from sample space
+    :param p: params dict of alphas & letters
+    :returns type dict: new dict of alphs & letters params
     """
-    # TODO update condition
+
+    D_i = poly_kernel(p['x_i'], x_t['x_t'])
+    E_i = poly_kernel(p['x_j'], x_t['x_t'])
+
+    if x_t['category'] == 'pos':
+        # logic for positive ex
+        q = 1
+    elif x_t['category'] == 'neg':
+        # logic for negative ex
+        q = 1
+
     return p
 
 
