@@ -78,6 +78,22 @@ def init_algo(args):
     return ret
 
 
+def training_step(data, args, index):
+    """
+    :param input_data: dict of X's & I's
+    :param args: CLARGS from user input
+    :returns type <numpy vector>:
+    """
+    # Define alpha
+    alpha_i = np.zeros(len(data['X_plus']), dtype=np.int)
+    alpha_j = np.zeros(len(data['X_minus']), dtype=np.int)
+
+    # TODO define kernel outputs A~E
+    #A = poly_kernel(
+
+    # TODO update condition
+
+
 def sk_algorithm(input_data, args):
     """
     Find support vectors of scaled convex hulls for X+ & X-.
@@ -88,11 +104,13 @@ def sk_algorithm(input_data, args):
     """
     # TODO implement scaling logic
 
-    # TODO define kernel outputs A~E
+    # Init Step
 
-    # TODO stop condition
+    for i in xrange(int(args.max_updates)):
+        update_results = training_step(input_data, args, i)
 
-    # TODO update condition
+        # TODO stop condition
+
 
     X_plus_svs = []
     X_minus_svs = []
@@ -110,7 +128,7 @@ def rep_data(img_path):
     :returns numpy arrays: A vector representation of the image.
     """
     img = Image.open(img_path)
-    arr = np.array(list(img.getdata()))
+    arr = np.array(list(img.getdata()), int)
 
     return arr
 
