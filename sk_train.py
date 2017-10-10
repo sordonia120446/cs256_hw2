@@ -12,6 +12,11 @@ import numpy as np
 from PIL import Image
 
 
+############################################################
+#Calculations
+############################################################
+
+
 def poly_kernel(x, x_i, p=4, c=1):
     """
     :param x_t: training input
@@ -38,6 +43,8 @@ def calc_mi(d):
     Calculate the m_i to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
 
+    This is for the positive examples I_plus.
+
     :param d: dict of alphas & letters
     :returns type float: the m_i value
     """
@@ -49,6 +56,31 @@ def calc_mi(d):
         raise Exception('Check the stop condition denom for m_i')
 
     return m_i_num/m_i_denom
+
+
+def calc_mj(d):
+    """
+    Calculate the m_j to find the one closest to being within epsilon
+    of the correct side of the hyperplane.  Important for stop condition.
+
+    This is for the negative examples I_minus.
+
+    :param d: dict of alphas & letters
+    :returns type float: the m_i value
+    """
+
+    m_i_num = float(-d['D_i'] + d['E_i'] + d['A'] - d['C'])
+    try:
+        m_i_denom = math.sqrt(d['A'] + d['B'] -2*d['C'])
+    except ValueError:
+        raise Exception('Check the stop condition denom for m_i')
+
+    return m_i_num/m_i_denom
+
+
+############################################################
+#Preliminaries
+############################################################
 
 
 def init_data(args):
@@ -95,7 +127,12 @@ def init_data(args):
     return ret
 
 
-def sk_init(data):
+############################################################
+#S-K Algo Core Logic
+############################################################
+
+
+def sk_init(data, i=0):
     """
     Step 1: Initialization of s-k algo for kernel version.
     Defines alpha_i & alpha_j, along with A~E.
@@ -109,20 +146,17 @@ def sk_init(data):
     alpha_i = np.zeros(len(data['X_plus']), dtype=np.int)
     alpha_j = np.zeros(len(data['X_minus']), dtype=np.int)
 
-    # Positive vector
-    x_i1 = data['X_plus'][0]
-    i1 = data['I_plus'][0]
+    # Positive ex
+    x_i1 = data['X_plus'][i]
+    i1 = data['I_plus'][i]
 
-    # Negative vector
-    x_j1 = data['X_minus'][0]
-    j1 = data['I_minus'][0]
-
-    print 'Positive vector:  {}'.format(x_i1)
-    print 'Negative vector:  {}'.format(x_j1)
+    # Negative ex
+    x_j1 = data['X_minus'][i]
+    j1 = data['I_minus'][i]
 
     # Set alpha's to one for support vector "guesses"
-    alpha_i[0] = 1
-    alpha_j[0] = 1
+    alpha_i[i] = 1
+    alpha_j[i] = 1
 
     # Define A~B
     A = poly_kernel(x_i1, x_i1)
@@ -147,15 +181,53 @@ def sk_init(data):
     return ret
 
 
-def training_step(d, args, index):
+def should_stop(d, p, epsilon):
     """
-    :param d: dict of alphas & letters
-    :param args: CLARGS from user input
-    :returns type <numpy vector>:
+    Determine whether to stop or continue.
+
+    :param d: the input data dict of X's & I's
+    :param p: dict of alphas & letters
+    :epsilon: error tolerance defined in CLARGS
+    :returns type bool: True if stop condition met; otherwise, False
     """
 
-    # TODO check for stop condition
+    # Get min vals
+    m_is = []
+    for pos_ex in d['X_plus']:
+        m_is.append(calc_mi(d))
 
+    m_js = []
+    for neg_ex in d['X_minus']:
+        m_js.append(calc_mj(d))
+
+    m_i_min = min(m_is)
+    m_j_min = min(m_js)
+
+    # Calc deltas
+    err_msg = 'Attempted negative sqrt for {} ex stop condition check'
+    try:
+        m_i_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - m_i_min
+    except ValueError:
+        raise Exception(err_msg.format('pos'))
+
+    try:
+        m_j_delta = math.sqrt(p['A'] + p['B'] - 2*p['C']) - m_j_min
+    except ValueError:
+        raise Exception(err_msg.format('neg'))
+
+    # Compare to epsilon
+    if m_i_delta < epsilon and m_j_delta < epsilon:
+        return True
+
+    return False
+
+
+def adapt(d, p):
+    """
+    :param d: dict of X's & I's from sample space
+    :param p: dict of alphas & letters
+    :returns type dict: new dict of alphs & letters
+    """
     # TODO update condition
     return None
 
@@ -166,26 +238,32 @@ def sk_algorithm(input_data, args):
 
     :param x: the input numpy vector from an img
     :args: the CLARGS from user input
-    :returns type tuple: X_prime_plus support vectors, X_prime_minus support vectors
+    :returns type dict: final dict of alphas and letters
     """
     # TODO implement scaling logic
 
     # Initialization
-    init_params = sk_init(input_data)
+    params = sk_init(input_data)
 
     for i in xrange(int(args.max_updates)):
+
+        # Print alphas & letters on every 1000th step
         if i % 1000 == 0:
-            print 'On training step {}'.format(i)
+            print '\nOn training step {}'.format(i)
+            print params
 
-        update_results = training_step(init_params, args, i)
+        # Check for stop condition
+        if should_stop(input_data, params, args.epsilon):
+            return params
 
-        # TODO stop condition
+        params = adapt(input_data, params)
+
+    return params
 
 
-    X_plus_svs = []
-    X_minus_svs = []
-
-    return X_plus_svs, X_minus_svs
+############################################################
+#Reading in the data
+############################################################
 
 
 def rep_data(img_path):
