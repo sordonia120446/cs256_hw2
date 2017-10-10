@@ -38,18 +38,22 @@ def calc_centroid(X):
     return (1/k)*sum(X)
 
 
-def calc_mi(d):
+def calc_mi(x_k, d):
     """
     Calculate the m_i to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
 
     This is for the positive examples I_plus.
 
+    :param x_k: the k-th elem of x (pos ex)
     :param d: dict of alphas & letters
     :returns type float: the m_i value
     """
 
-    m_i_num = float(d['D_i'] - d['E_i'] + d['B'] - d['C'])
+    D_i = poly_kernel(d['x_i'], x_k)
+    E_i = poly_kernel(d['x_j'], x_k)
+
+    m_i_num = float(D_i - E_i + d['B'] - d['C'])
     try:
         m_i_denom = math.sqrt(d['A'] + d['B'] -2*d['C'])
     except ValueError:
@@ -58,18 +62,22 @@ def calc_mi(d):
     return m_i_num/m_i_denom
 
 
-def calc_mj(d):
+def calc_mj(x_k, d):
     """
     Calculate the m_j to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
 
     This is for the negative examples I_minus.
 
+    :param x_k: the k-th elem of x (neg ex)
     :param d: dict of alphas & letters
     :returns type float: the m_i value
     """
 
-    m_i_num = float(-d['D_i'] + d['E_i'] + d['A'] - d['C'])
+    D_i = poly_kernel(d['x_i'], x_k)
+    E_i = poly_kernel(d['x_j'], x_k)
+
+    m_i_num = float(-D_i + E_i + d['A'] - d['C'])
     try:
         m_i_denom = math.sqrt(d['A'] + d['B'] -2*d['C'])
     except ValueError:
@@ -158,22 +166,22 @@ def sk_init(data, i=0):
     alpha_i[i] = 1
     alpha_j[i] = 1
 
-    # Define A~B
+    # Define A~C
     A = poly_kernel(x_i1, x_i1)
     B = poly_kernel(x_j1, x_j1)
     C = poly_kernel(x_i1, x_j1)
-    D_i = poly_kernel(x_i1, x_i1)
-    E_i = poly_kernel(x_i1, x_j1)
 
     # Add to dict
     ret = {
+        'x_i': x_i1,
+        'i': i1,
+        'x_j': x_j1,
+        'j': j1,
         'alpha_i': alpha_i,
         'alpha_j': alpha_j,
         'A': A,
         'B': B,
-        'C': C,
-        'D_i': D_i,
-        'E_i': E_i
+        'C': C
     }
 
     print ret
@@ -194,11 +202,11 @@ def should_stop(d, p, epsilon):
     # Get min vals
     m_is = []
     for pos_ex in d['X_plus']:
-        m_is.append(calc_mi(d))
+        m_is.append(calc_mi(pos_ex, p))
 
     m_js = []
     for neg_ex in d['X_minus']:
-        m_js.append(calc_mj(d))
+        m_js.append(calc_mj(neg_ex, p))
 
     m_i_min = min(m_is)
     m_j_min = min(m_js)
@@ -217,6 +225,7 @@ def should_stop(d, p, epsilon):
 
     # Compare to epsilon
     if m_i_delta < epsilon and m_j_delta < epsilon:
+        print 'Success!'
         return True
 
     return False
@@ -339,5 +348,10 @@ if __name__ == '__main__':
     input_data = init_data(args)  # dict
 
     # Run algo
-    sk_algorithm(input_data, args)
+    params = sk_algorithm(input_data, args)
+
+    print '\n Final output:  '
+
+    for k, v in params.items():
+        print '{}: {}'.format(k, v)
 
