@@ -116,7 +116,7 @@ def calc_mj(x_k, p):
     try:
         m_i_denom = math.sqrt(p['A'] + p['B'] -2*p['C'])
     except ValueError:
-        raise Exception('Check the stop condition denom for m_i')
+        raise Exception('Check the stop condition denom for m_j')
 
     return m_i_num/m_i_denom
 
