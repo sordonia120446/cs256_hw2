@@ -73,7 +73,7 @@ def calc_lambda(X_plus, X_minus):
     return 0.5 * r / (r_plus + r_minus)  # lambda <= r / (r+ + r-)
 
 
-def calc_mi(x_k, p):
+def calc_mi(x_k, p, ind):
     """
     Calculate the m_i to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
@@ -85,8 +85,8 @@ def calc_mi(x_k, p):
     :returns type float: the m_i value
     """
 
-    D_i = poly_kernel(p['x_i'], x_k)
-    E_i = poly_kernel(p['x_j'], x_k)
+    D_i = p['D'][ind]
+    E_i = p['E'][ind]
 
     m_i_num = float(D_i - E_i + p['B'] - p['C'])
     try:
@@ -97,7 +97,7 @@ def calc_mi(x_k, p):
     return m_i_num/m_i_denom
 
 
-def calc_mj(x_k, p):
+def calc_mj(x_k, p, ind):
     """
     Calculate the m_j to find the one closest to being within epsilon
     of the correct side of the hyperplane.  Important for stop condition.
@@ -109,8 +109,10 @@ def calc_mj(x_k, p):
     :returns type float: the m_i value
     """
 
-    D_i = poly_kernel(p['x_i'], x_k)
-    E_i = poly_kernel(p['x_j'], x_k)
+    #D_i = poly_kernel(p['x_i'], x_k)
+    #E_i = poly_kernel(p['x_j'], x_k)
+    D_i = p['D'][ind]
+    E_i = p['E'][ind]
 
     m_i_num = float(-D_i + E_i + p['A'] - p['C'])
     try:
@@ -181,7 +183,7 @@ def sk_init(data, i=0):
     Defines alpha_i & alpha_j, along with A~E.
 
     :param input_data: the dict input data for +/-'s.
-    :returns type dict: alphas & letters
+    :returns type dict: pos_ex, neg_ex, alphas, & letters
     """
     ret = {}
 
@@ -206,6 +208,17 @@ def sk_init(data, i=0):
     B = poly_kernel(x_j1, x_j1)
     C = poly_kernel(x_i1, x_j1)
 
+    # Define D & E for all i in I, x_i in X
+    D = {}
+    E = {}
+    for ind, x_i in zip(data['I_plus'], data['X_plus']):
+        D[ind] = poly_kernel(x_i, x_i1)
+        E[ind] = poly_kernel(x_i, x_j1)
+
+    for ind, x_i in zip(data['I_minus'], data['X_minus']):
+        D[ind] = poly_kernel(x_i, x_i1)
+        E[ind] = poly_kernel(x_i, x_j1)
+
     # Add to dict
     ret = {
         'x_i': x_i1,
@@ -216,10 +229,10 @@ def sk_init(data, i=0):
         'alpha_j': alpha_j,
         'A': A,
         'B': B,
-        'C': C
+        'C': C,
+        'D': D,
+        'E': E
     }
-
-    print ret
 
     return ret
 
@@ -241,14 +254,16 @@ def should_stop(d, p, epsilon):
     """
     m_is = {}
     for pos_ex, pos_ind in zip(d['X_plus'], d['I_plus']):
-        m_is[(calc_mi(pos_ex, p))] = {
+        m_i = calc_mi(pos_ex, p, pos_ind)
+        m_is[m_i] = {
             'ind': pos_ind,
             'x': pos_ex
         }
 
     m_js = {}
     for neg_ex, neg_ind in zip(d['X_minus'], d['I_minus']):
-        m_js[calc_mj(neg_ex, p)] = {
+        m_j = calc_mj(neg_ex, p, neg_ind)
+        m_js[m_j] = {
             'ind': neg_ind,
             'x': neg_ex
         }
@@ -268,7 +283,7 @@ def should_stop(d, p, epsilon):
         ret = {
             'category': 'neg',  # negative category
             'm_t': m_j_min,  # see calc_mi
-            't': m_js[m_j_min],  # index val of min
+            't_ind': m_js[m_j_min]['ind'],  # index val of min
             'x_t': m_js[m_j_min]['x']  # support vector
         }
 
@@ -297,12 +312,14 @@ def adapt(d, p, x_t):
     A = p['A']
     B = p['B']
     C = p['C']
-    D_i = poly_kernel(p['x_i'], x_t['x_t'])
-    E_i = poly_kernel(p['x_j'], x_t['x_t'])
 
-    t = x_t['t']
-    D_t = poly_kernel(p['x_i'], x_t['x_t']) # Not sure what these should be...
-    E_t = poly_kernel(p['x_j'], x_t['x_t'])
+    t = x_t['t_ind']
+
+    try:
+        D_t = p['D'][t]
+        E_t = p['E'][t]
+    except KeyError:
+        raise Exception('FATAL ERROR! CHECK YOUR INPUT LOGIC!!')
 
     delta_i_t = lambda i, t: 1 if i == t else 0
 
