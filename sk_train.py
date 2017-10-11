@@ -312,12 +312,14 @@ def adapt(d, p, x_t):
     A = p['A']
     B = p['B']
     C = p['C']
+    D = p['D']
+    E = p['E']
 
     t = x_t['t_ind']
 
     try:
-        D_t = p['D'][t]
-        E_t = p['E'][t]
+        D_t = D[t]
+        E_t = E[t]
     except KeyError:
         raise Exception('FATAL ERROR! CHECK YOUR INPUT LOGIC!!')
 
@@ -335,7 +337,12 @@ def adapt(d, p, x_t):
         p['A'] = A * (1 - q)**2 + 2 * (1 - q) * q * D_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
         p['C'] = (1 - q) * C + q * E_t
 
-        # Update D_i
+        # Update D and add back to params dict
+        for ind, D_i in D.items():
+            D[ind] = (1 - q)*D_i + q*poly_kernel(x_t['x_t'], x_t['x_t'])
+
+        p['D'] = D
+            
 
     elif x_t['category'] == 'neg':
         # logic for negative ex
@@ -349,7 +356,11 @@ def adapt(d, p, x_t):
         p['B'] = B * (1 - q)**2 + 2 * (1 - q) * q * E_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
         p['C'] = (1 - q) * C + q * D_t
 
-        # Update E_i
+        # Update E
+        for ind, E_i in E.items():
+            E[ind] = (1 - q)*E_i + q*poly_kernel(x_t['x_t'], x_t['x_t'])
+
+        p['E'] = E
 
     return p
 
