@@ -293,12 +293,23 @@ def adapt(d, p, x_t):
     :returns type dict: new dict of alphs & letters params
     """
 
+    A = p['A']
+    B = p['B']
+    C = p['C']
     D_i = poly_kernel(p['x_i'], x_t['x_t'])
     E_i = poly_kernel(p['x_j'], x_t['x_t'])
 
+    t = x_t['t']
+    delta_i_t = lambda i, t: 1 if i == t else 0
+
     if x_t['category'] == 'pos':
         # logic for positive ex
-        q = 1
+        q = min(1, (A - D_i + E_i - C) / (A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_i - E_i)))
+
+        alpha = p['alpha_i']
+        for i in alpha:
+            alpha[i] = (1 - q) * alpha[i] + q * delta_i_t(i, t)
+
     elif x_t['category'] == 'neg':
         # logic for negative ex
         q = 1
