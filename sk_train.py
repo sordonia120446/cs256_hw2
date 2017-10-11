@@ -314,8 +314,8 @@ def adapt(d, p, x_t):
             alpha[i] = (1 - q) * alpha[i] + q * delta_i_t(i, t)
 
         # Update kernel functions
-        A = A * (1 - q)**2 + 2 * (1 - q) * q * D_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
-        C = (1 - q) * C + q * E_t
+        p['A'] = A * (1 - q)**2 + 2 * (1 - q) * q * D_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
+        p['C'] = (1 - q) * C + q * E_t
 
         # Update D_i
 
@@ -328,8 +328,8 @@ def adapt(d, p, x_t):
             alpha[j] = (1 - q) * alpha[j] + q * delta_i_t(j, t)
 
         # Update kernel functions
-        B = B * (1 - q)**2 + 2 * (1 - q) * q * E_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
-        C = (1 - q) * C + q * D_t
+        p['B'] = B * (1 - q)**2 + 2 * (1 - q) * q * E_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
+        p['C'] = (1 - q) * C + q * D_t
 
         # Update E_i
 
