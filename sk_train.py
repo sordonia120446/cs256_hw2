@@ -300,19 +300,38 @@ def adapt(d, p, x_t):
     E_i = poly_kernel(p['x_j'], x_t['x_t'])
 
     t = x_t['t']
+    D_t = poly_kernel(p['x_i'], x_t['x_t']) # Not sure what these should be...
+    E_t = poly_kernel(p['x_j'], x_t['x_t'])
+
     delta_i_t = lambda i, t: 1 if i == t else 0
 
     if x_t['category'] == 'pos':
         # logic for positive ex
-        q = min(1, (A - D_i + E_i - C) / (A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_i - E_i)))
+        q = min(1, (A - D_t + E_t - C) / (A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_t - E_t)))
 
-        alpha = p['alpha_i']
+        alpha = p['alpha_i'] # Adapt positive alphas (coefficients)
         for i in alpha:
             alpha[i] = (1 - q) * alpha[i] + q * delta_i_t(i, t)
 
+        # Update kernel functions
+        A = A * (1 - q)**2 + 2 * (1 - q) * q * D_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
+        C = (1 - q) * C + q * E_t
+
+        # Update D_i
+
     elif x_t['category'] == 'neg':
         # logic for negative ex
-        q = 1
+        q = min(1, (B - E_t + D_t - C) / (B + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (E_t - D_t)))
+
+        alpha = p['alpha_j'] # Adapt negative alphas (coefficients)
+        for j in alpha:
+            alpha[j] = (1 - q) * alpha[j] + q * delta_i_t(j, t)
+
+        # Update kernel functions
+        B = B * (1 - q)**2 + 2 * (1 - q) * q * E_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
+        C = (1 - q) * C + q * D_t
+
+        # Update E_i
 
     return p
 
