@@ -7,6 +7,7 @@ import argparse
 import glob
 import math
 import os
+import pickle
 
 import numpy as np
 from PIL import Image
@@ -366,6 +367,18 @@ def sk_algorithm(input_data, args):
     print '\nTrained for {}'.format(args.max_updates)
 
     return params
+
+
+def serialize_model(model, filename):
+    '''
+    Serialize the model generated from training as a text file
+
+    :param model: Dictionary containing trained class, centroids, lambda and weights
+    :param filename: Name of file to save model in
+    '''
+
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
 
 
 ############################################################
