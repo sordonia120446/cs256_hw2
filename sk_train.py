@@ -55,16 +55,16 @@ def calc_lambda(X_plus, X_minus):
         m_plus = m_plus.append(m_plus, m_plus_i)
         m_minus = m_minus.append(m_minus, m_minus_i)
 
-    # calculate r from m_plus and m_minus
+    # calculate r from m_plus and m_minus (Euclidean distance between centroids)
     r = np.linalg.norm(m_plus - m_minus)
 
-    # calculate r_plus
+    # calculate r_plus (radius of positive convex hull)
     r_pluses = []
     for X_plus_i in X_plus:
         r_pluses.append(np.linalg.norm(X_plus_i - m_plus))
     r_plus = max(r_pluses)
 
-    # calculate r_minus
+    # calculate r_minus (radius of negative convex hull)
     r_minuses = []
     for X_minus_i in X_minus:
         r_minuses.append(np.linalg.norm(X_minus_i - m_minus))
@@ -169,7 +169,7 @@ def init_data(args):
 
     print 'Data inputs initialized'
 
-    return ret
+    return ret # Vectors in X by class and index
 
 
 ############################################################
@@ -187,15 +187,15 @@ def sk_init(data, i=0):
     """
     ret = {}
 
-    # Define alpha
+    # Define alpha (alpha_i = pos weights, alpha_j = neg weights)
     alpha_i = np.zeros(len(data['X_plus']), dtype=np.int)
     alpha_j = np.zeros(len(data['X_minus']), dtype=np.int)
 
-    # Positive ex
+    # Positive ex (any vector in X+, default is index 0)
     x_i1 = data['X_plus'][i]
     i1 = data['I_plus'][i]
 
-    # Negative ex
+    # Negative ex (any vector in X-, default is index 0)
     x_j1 = data['X_minus'][i]
     j1 = data['I_minus'][i]
 
@@ -271,7 +271,7 @@ def should_stop(d, p, epsilon):
     m_i_min = min(m_is.keys())
     m_j_min = min(m_js.keys())
 
-    # Define x_t and its corresponding metadata
+    # Define x_t (vector closest to hyperplane) and its corresponding metadata
     if m_is[m_i_min] < m_js[m_j_min]:
         ret = {
             'category': 'pos',  # positive category
@@ -315,7 +315,7 @@ def adapt(d, p, x_t):
     D = p['D']
     E = p['E']
 
-    t = x_t['t_ind']
+    t = x_t['t_ind'] # Index of vector closest to hyperplane
 
     try:
         D_t = D[t]
@@ -326,7 +326,7 @@ def adapt(d, p, x_t):
     delta_i_t = lambda i, t: 1 if i == t else 0
 
     if x_t['category'] == 'pos':
-        # logic for positive ex
+        # logic for positive ex, i.e. if x_t is from positive examples
         q = min(1, (A - D_t + E_t - C) / (A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_t - E_t)))
 
         alpha = p['alpha_i'] # Adapt positive alphas (coefficients)
@@ -345,7 +345,7 @@ def adapt(d, p, x_t):
             
 
     elif x_t['category'] == 'neg':
-        # logic for negative ex
+        # logic for negative ex, i.e. if x_t is from negative examples
         q = min(1, (B - E_t + D_t - C) / (B + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (E_t - D_t)))
 
         alpha = p['alpha_j'] # Adapt negative alphas (coefficients)
@@ -373,12 +373,12 @@ def sk_algorithm(input_data, args):
     :args: the CLARGS from user input
     :returns type dict: final dict of alphas and letters
     """
-    # TODO implement scaling logic
+    # TODO implement scaling logic (need to return lambda and centroids for serialization)
 
     # Initialization
     params = sk_init(input_data)
 
-    for i in xrange(int(args.max_updates)):
+    for i in xrange(int(args.max_updates)): # If max num of updates reached before err < epsilon, stop
 
         # Print alphas & letters on every 1000th step
         if i % 1000 == 0:
