@@ -434,16 +434,25 @@ def sk_algorithm(input_data, args):
     return params
 
 
-def serialize_model(model, filename):
+def serialize_model(params, input_data, filename):
     '''
     Serialize the model generated from training as a text file
 
-    :param model: Dictionary containing trained class, centroids, lambda and weights
+    :param params: Dictionary containing trained class, centroids, lambda and weights
     :param filename: Name of file to save model in
+    :returns type bool: True if write succeeds; otherwise, False
     '''
+
+    model = params
+
+    for k, v in input_data.items():
+        model[k] = v
 
     with open(filename, 'wb') as f:
         pickle.dump(model, f)
+        return True
+
+    return False
 
 
 ############################################################
@@ -523,10 +532,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Init
-    input_data = init_data(args)  # dict
+    input_data = init_data(args)  # dict of input data
 
     # Run algo
-    params = sk_algorithm(input_data, args)
+    params = sk_algorithm(input_data, args)  # dict of model params
+
+    # Write model to file
+    if serialize_model(params, input_data, args.model_file_name):
+        print 'Model saved to {}'.format(args.model_file_name)
 
     print '\n Final output:  '
 
