@@ -33,7 +33,7 @@ def draw_shape(bg, shape, pos_offset=0, size_offset=0, rotation=0):
     try:
         src = Image.open(file_path)
     except IOError:
-        print 'Shape not found'
+        raise Exception('Shape not found')
 
     mask = ImageOps.invert(src).rotate(rotation).resize((bg.size[0] + size_offset, bg.size[1] + size_offset)).convert('1')
 
