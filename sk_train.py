@@ -296,7 +296,7 @@ def should_stop(d, p, epsilon):
 
     # Compare to epsilon
     if m_delta < epsilon:
-        print 'Stop condition met!:  {}'.format(m_delta)
+        print 'Stop condition met for tolerance: {}'.format(m_delta)
         return True, ret
 
     return False, ret
@@ -404,6 +404,7 @@ def sk_algorithm(input_data, args):
         # Check for stop condition
         is_done, x_t = should_stop(input_data, params, args.epsilon)
         if is_done:
+            print 'Completed training at step {step}'.format(step=i)
             return params
 
         params = adapt(input_data, params, x_t)
