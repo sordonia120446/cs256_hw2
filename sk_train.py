@@ -72,10 +72,23 @@ def calc_lambda(X_plus, X_minus):
     for X_minus_i in X_minus:
         r_minus = max(r_minus, np.linalg.norm(X_minus_i - m_minus))
 
-    # lambda <= r / (r+ + r-)
-    lam = 0.5 * r / (r_plus + r_minus)
+    lam = (0.5 * r) / (r_plus + r_minus)
+    print 'lambda = {}'.format(lam)
+
     # return lambda and the centroids
     return lam, m_plus, m_minus
+
+
+def scale_inputs(X_plus, X_minus, lam, m_plus, m_minus):
+    lam, m_plus, m_minus = calc_lambda(X_plus, X_minus)
+    for i, x_i in enumerate(X_plus):
+        X_plus[i] = lam * x_i + (1 - lam) * m_plus
+    for j, x_j in enumerate(X_minus):
+        X_minus[j] = lam * x_j + (1 - lam) * m_minus
+
+    print 'xplus' + str(X_plus)
+    print 'xminus' + str(X_minus)
+    return X_plus, X_minus
 
 
 def calc_mi(x_k, p, ind):
@@ -165,15 +178,7 @@ def init_data(args):
     if len(X_plus) != len(I_plus) or len(X_minus) != len(I_minus):
         raise Exception('[ERROR] Init filter is not working')
 
-    # scaled to lambda
-    lam, m_plus, m_minus = calc_lambda(X_plus, X_minus)
-    for i in range(len(X_plus)):
-        X_plus[i] = lam * X_plus[i] + (1 - lam) * m_plus
-    for i in range (len(X_minus)):
-        X_minus[i] = lam * X_minus[i] + (1 - lam) * m_minus
-
-    print 'xplus' + str(X_plus)
-    print 'xminus' + str(X_minus)
+    # TODO scaled to lambda
 
     ret = {
         'X_plus': X_plus,
@@ -414,7 +419,7 @@ def sk_algorithm(input_data, args):
         # Print alphas & letters on every 1000th step
         if i % 1000 == 0:
             print '\nOn training step {}'.format(i)
-            print params
+            #print params
 
         # Check for stop condition
         is_done, x_t = should_stop(input_data, params, args.epsilon)
@@ -525,6 +530,4 @@ if __name__ == '__main__':
 
     print '\n Final output:  '
 
-    for k, v in params.items():
-        print '{}: {}'.format(k, v)
 
