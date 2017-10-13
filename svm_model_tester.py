@@ -8,6 +8,8 @@ import argparse
 import glob
 import pickle
 
+from sk_train import poly_kernel, rep_data
+
 
 def load_data(args):
     '''
@@ -29,6 +31,9 @@ def load_data(args):
     except IOError:
         raise Exception('CAN\'T FIND MODEL FILE')
 
+    #################################################################
+    # Why is this here???
+
     # Load the training data
     training_data_path = os.path.join(os.getcwd(), args.train_folder_data)
 
@@ -36,11 +41,13 @@ def load_data(args):
         raise Exception('Training data folder not found')
 
     training_data = []
-    for f in glob.glob(os.path.join(training_data_path, '*.png')):
-        training_data.append(f)
+    for f_name in glob.glob(os.path.join(training_data_path, '*.png')):
+        x_train = rep_data(f_name)
+        training_data.append(x_train)
 
     if not training_data:
         raise Exception('NO TRAINING DATA')
+    #################################################################
 
     # Load the test data
     testing_data_path = os.path.join(os.getcwd(), args.test_folder_data)
@@ -49,17 +56,50 @@ def load_data(args):
         raise Exception('Testing data folder not found')
 
     testing_data = []
-    for f in glob.glob(os.path.join(testing_data_path, '*.png')):
-        testing_data.append(f)
+    for f_name in glob.glob(os.path.join(testing_data_path, '*.png')):
+        x_test = rep_data(f_name)
+        testing_data.append(x_test)
 
     if not testing_data:
         raise Exception('NO TESTING DATA')
 
-    return model, training_data, testing_data
+    return model, testing_data
 
 
-def test_SVM(model, training_data, testing_data):
-    pass
+def test_SVM(p, x):
+    """
+    Computes g(x) from the lecture notes.
+
+    :param p: Params for the trained model (alphas, lambda, A~C)
+    :training_data: Training set which maximal separator is based upon
+    :param x: test vector
+    :returns: True if g >= 0; otherwise, False
+    """
+    
+    # Compare  to positive ex's alpha_i = p['alpha_i']
+    alpha_i = p['alpha_i']
+    X_plus = p['X_plus']
+
+    sum_plus = sum(
+        [ai*poly_kernel(xi, x) for ai, xi in zip(alpha_i, X_plus)]
+    )
+
+    # Compare to negative ex's
+    alpha_j = p['alpha_j']
+    X_minus = p['X_minus']
+
+    sum_minus = sum(
+        [-aj*poly_kernel(xj, x) for aj, xj in zip(alpha_j, X_minus)]
+    )
+
+    sum_total = sum_plus + sum_minus
+
+    A = p['A']
+    B = p['B']
+    g = sum_total + 0.5*(B - A)
+
+    return True if g >= 0 else False
+
 
 # CLARGS
 parser = argparse.ArgumentParser(
@@ -86,4 +126,14 @@ parser.add_argument(
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    load_data(args)
+    # Read inputs
+    model, testing_data = load_data(args)
+
+    # Compare
+    results = {}
+    for input_test in testing_data:
+        g = test_SVM(model, input_test)
+        print g
+
+    print 'Tests complete'
+

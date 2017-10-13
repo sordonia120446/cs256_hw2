@@ -22,10 +22,17 @@ def poly_kernel(x, x_i, p=4, c=1):
     """
     :param x_t: training input
     :param x_i: input vector
-    :returns type int:
+    :returns type int: The kernel output if successful; otherwise, 0
     """
     x_t = np.transpose(x)
-    return (np.dot(x_t, x_i) + c)**p
+    try:
+        return (np.dot(x_t, x_i) + c)**p
+    except ValueError:
+        print 'Input: {}'.format(x_t.shape)
+        print 'Input: {}'.format(x_i)
+        raise Exception('Kernel fnc cannot dot vectors of diff dims')
+
+    return 0
 
 
 def calc_lambda(X_plus, X_minus):
@@ -434,16 +441,25 @@ def sk_algorithm(input_data, args):
     return params
 
 
-def serialize_model(model, filename):
+def serialize_model(params, input_data, filename):
     '''
     Serialize the model generated from training as a text file
 
-    :param model: Dictionary containing trained class, centroids, lambda and weights
+    :param params: Dictionary containing trained class, centroids, lambda and weights
     :param filename: Name of file to save model in
+    :returns type bool: True if write succeeds; otherwise, False
     '''
+
+    model = params
+
+    for k, v in input_data.items():
+        model[k] = v
 
     with open(filename, 'wb') as f:
         pickle.dump(model, f)
+        return True
+
+    return False
 
 
 ############################################################
@@ -464,25 +480,6 @@ def rep_data(img_path):
     arr = np.array(list(img.getdata()), int)
 
     return arr/255 # normalize to 1's for white; 0's otherwise
-
-
-def classify_pixels(img_arr):
-    """
-    Pixel value 255 corresponds to white.
-
-    :param img_arr type <numpy arr> 
-    :returns: two numpy vectors of white & non-white pixels
-    """
-
-    white_pixels = []
-    nonwhite_pixels = []
-    for (x, y), value in np.ndenumerate(img_arr):
-        if value == 255:
-            white_pixels.add((x,y))
-        else:
-            nonwhite_pixels.add((x, y))
-
-    return white_pixels, nonwhite_pixels
 
 
 ############################################################
@@ -523,10 +520,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Init
-    input_data = init_data(args)  # dict
+    input_data = init_data(args)  # dict of input data
 
     # Run algo
-    params = sk_algorithm(input_data, args)
+    params = sk_algorithm(input_data, args)  # dict of model params
+
+    # Write model to file
+    if serialize_model(params, input_data, args.model_file_name):
+        print 'Model saved to {}'.format(args.model_file_name)
 
     print '\n Final output:  '
 
