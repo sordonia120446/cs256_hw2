@@ -482,25 +482,6 @@ def rep_data(img_path):
     return arr/255 # normalize to 1's for white; 0's otherwise
 
 
-def classify_pixels(img_arr):
-    """
-    Pixel value 255 corresponds to white.
-
-    :param img_arr type <numpy arr> 
-    :returns: two numpy vectors of white & non-white pixels
-    """
-
-    white_pixels = []
-    nonwhite_pixels = []
-    for (x, y), value in np.ndenumerate(img_arr):
-        if value == 255:
-            white_pixels.add((x,y))
-        else:
-            nonwhite_pixels.add((x, y))
-
-    return white_pixels, nonwhite_pixels
-
-
 ############################################################
 #CLARGS
 ############################################################
