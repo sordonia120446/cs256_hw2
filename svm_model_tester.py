@@ -11,6 +11,8 @@ import pickle
 from sk_train import poly_kernel, rep_data
 
 
+testing_class = 'O'
+
 def load_data(args):
     '''
     Loads the trained model, training data and testing data, if they exist.
@@ -44,6 +46,7 @@ def load_data(args):
     for f_name in glob.glob(os.path.join(training_data_path, '*.png')):
         x_train = rep_data(f_name)
         training_data.append(x_train)
+        # to score... jason chee
 
     if not training_data:
         raise Exception('NO TRAINING DATA')
@@ -56,14 +59,21 @@ def load_data(args):
         raise Exception('Testing data folder not found')
 
     testing_data = []
+    I_plus = []
     for f_name in glob.glob(os.path.join(testing_data_path, '*.png')):
         x_test = rep_data(f_name)
         testing_data.append(x_test)
+        # to score... jason chee
+        f_name = os.path.splitext(os.path.basename(f_name))
+
+        ind, letter = f_name[0].split('_')
+        if letter.upper() == testing_class:
+            I_plus.append(ind)
 
     if not testing_data:
         raise Exception('NO TESTING DATA')
-
-    return model, testing_data
+    print I_plus
+    return model, testing_data, I_plus
 
 
 def test_SVM(p, x):
@@ -127,13 +137,34 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Read inputs
-    model, testing_data = load_data(args)
+    model, testing_data, I_plus = load_data(args)
 
     # Compare
-    results = {}
-    for input_test in testing_data:
+    results = {'Correct': 0,
+               'False Positive': 0,
+               'False Negative': 0}
+
+    for i, input_test in enumerate(testing_data):
         g = test_SVM(model, input_test)
-        print g
+        if g:
+            if str(i) in I_plus:
+                print str(i) + ' Correct'
+                results['Correct'] += 1
+            else:
+                print str(i) + ' False Positive'
+                results['False Positive'] += 1
+        else:
+            if str(i) not in I_plus:
+                print str(i) + ' Correct'
+                results['Correct'] += 1
+            else:
+                print str(i) + ' False Negative'
+                results['False Negative'] += 1
+
+    for result in results:
+        results[result] /= float(len(testing_data))
+
+    print str(results)
 
     print 'Tests complete'
 
