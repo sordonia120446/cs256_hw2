@@ -31,6 +31,9 @@ def load_data(args):
     except IOError:
         raise Exception('CAN\'T FIND MODEL FILE')
 
+    #################################################################
+    # Why is this here???
+
     # Load the training data
     training_data_path = os.path.join(os.getcwd(), args.train_folder_data)
 
@@ -39,12 +42,12 @@ def load_data(args):
 
     training_data = []
     for f_name in glob.glob(os.path.join(training_data_path, '*.png')):
-        x_test = rep_data(f_name)
-        print type(x_test)
-        training_data.append(x_test)
+        x_train = rep_data(f_name)
+        training_data.append(x_train)
 
     if not training_data:
         raise Exception('NO TRAINING DATA')
+    #################################################################
 
     # Load the test data
     testing_data_path = os.path.join(os.getcwd(), args.test_folder_data)
@@ -53,16 +56,17 @@ def load_data(args):
         raise Exception('Testing data folder not found')
 
     testing_data = []
-    for f in glob.glob(os.path.join(testing_data_path, '*.png')):
-        testing_data.append(f)
+    for f_name in glob.glob(os.path.join(testing_data_path, '*.png')):
+        x_test = rep_data(f_name)
+        testing_data.append(x_test)
 
     if not testing_data:
         raise Exception('NO TESTING DATA')
 
-    return model, training_data, testing_data
+    return model, testing_data
 
 
-def test_SVM(p, training_data, x):
+def test_SVM(p, x):
     """
     Computes g(x) from the lecture notes.
 
@@ -72,10 +76,9 @@ def test_SVM(p, training_data, x):
     :returns: True if g >= 0; otherwise, False
     """
     
-    # Compare  to positive ex's
+    # Compare  to positive ex's alpha_i = p['alpha_i']
     alpha_i = p['alpha_i']
     X_plus = p['X_plus']
-    print x
 
     sum_plus = sum(
         [ai*poly_kernel(xi, x) for ai, xi in zip(alpha_i, X_plus)]
@@ -84,6 +87,7 @@ def test_SVM(p, training_data, x):
     # Compare to negative ex's
     alpha_j = p['alpha_j']
     X_minus = p['X_minus']
+
     sum_minus = sum(
         [-aj*poly_kernel(xj, x) for aj, xj in zip(alpha_j, X_minus)]
     )
@@ -122,10 +126,14 @@ parser.add_argument(
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    model, training_data, testing_data = load_data(args)
+    # Read inputs
+    model, testing_data = load_data(args)
+
+    # Compare
+    results = {}
     for input_test in testing_data:
-        print type(input_test)
-        test_SVM(model, training_data, testing_data)
+        g = test_SVM(model, input_test)
+        print g
 
     print 'Tests complete'
 
