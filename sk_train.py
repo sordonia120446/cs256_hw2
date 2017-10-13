@@ -44,31 +44,33 @@ def calc_lambda(X_plus, X_minus):
     for i in xrange(25 * 25):
         m_plus_i = 0
         for X_plus_i in X_plus:
-            m_plus_i += X_plus_i
+            m_plus_i += X_plus_i[i]
 
         m_minus_i = 0
         for X_minus_i in X_minus:
-            m_minus_i += X_minus_i
+            m_minus_i += X_minus_i[i]
 
-        m_plus_i /= len(X_plus)
-        m_minus_i /= len(X_minus)
-        m_plus = m_plus.append(m_plus, m_plus_i)
-        m_minus = m_minus.append(m_minus, m_minus_i)
+        m_plus = np.append(m_plus, m_plus_i)
+        m_minus = np.append(m_minus, m_minus_i)
+
+    m_plus /= float(len(X_plus))
+    m_minus /= float(len(X_minus))
+
+    print 'm_plus: ' + str(m_plus) + ' len: ' + str(len(m_plus))
+    print 'm_minus: ' + str(m_minus) + ' len: ' + str(len(m_minus))
 
     # calculate r from m_plus and m_minus (Euclidean distance between centroids)
     r = np.linalg.norm(m_plus - m_minus)
-
+    print 'r: ' + str(r)
     # calculate r_plus (radius of positive convex hull)
-    r_pluses = []
+    r_plus = 0
     for X_plus_i in X_plus:
-        r_pluses.append(np.linalg.norm(X_plus_i - m_plus))
-    r_plus = max(r_pluses)
+        r_plus = max(r_plus, np.linalg.norm(X_plus_i - m_plus))
 
     # calculate r_minus (radius of negative convex hull)
-    r_minuses = []
+    r_minus = 0
     for X_minus_i in X_minus:
-        r_minuses.append(np.linalg.norm(X_minus_i - m_minus))
-    r_minus = max(r_minuses)
+        r_minus = max(r_minus, np.linalg.norm(X_minus_i - m_minus))
 
     return 0.5 * r / (r_plus + r_minus)  # lambda <= r / (r+ + r-)
 
@@ -166,7 +168,7 @@ def init_data(args):
         'I_plus': I_plus,
         'I_minus': I_minus
     }
-
+    print 'lambda: ' + str(calc_lambda(X_plus, X_minus))
     print 'Data inputs initialized'
 
     return ret # Vectors in X by class and index
