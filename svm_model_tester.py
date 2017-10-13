@@ -8,6 +8,8 @@ import argparse
 import glob
 import pickle
 
+from sk_train import poly_kernel, rep_data
+
 
 def load_data(args):
     '''
@@ -36,8 +38,10 @@ def load_data(args):
         raise Exception('Training data folder not found')
 
     training_data = []
-    for f in glob.glob(os.path.join(training_data_path, '*.png')):
-        training_data.append(f)
+    for f_name in glob.glob(os.path.join(training_data_path, '*.png')):
+        x_test = rep_data(f_name)
+        print type(x_test)
+        training_data.append(x_test)
 
     if not training_data:
         raise Exception('NO TRAINING DATA')
@@ -58,8 +62,40 @@ def load_data(args):
     return model, training_data, testing_data
 
 
-def test_SVM(model, training_data, testing_data):
-    pass
+def test_SVM(p, training_data, x):
+    """
+    Computes g(x) from the lecture notes.
+
+    :param p: Params for the trained model (alphas, lambda, A~C)
+    :training_data: Training set which maximal separator is based upon
+    :param x: test vector
+    :returns: True if g >= 0; otherwise, False
+    """
+    
+    # Compare  to positive ex's
+    alpha_i = p['alpha_i']
+    X_plus = p['X_plus']
+    print x
+
+    sum_plus = sum(
+        [ai*poly_kernel(xi, x) for ai, xi in zip(alpha_i, X_plus)]
+    )
+
+    # Compare to negative ex's
+    alpha_j = p['alpha_j']
+    X_minus = p['X_minus']
+    sum_minus = sum(
+        [-aj*poly_kernel(xj, x) for aj, xj in zip(alpha_j, X_minus)]
+    )
+
+    sum_total = sum_plus + sum_minus
+
+    A = p['A']
+    B = p['B']
+    g = sum_total + 0.5*(B - A)
+
+    return True if g >= 0 else False
+
 
 # CLARGS
 parser = argparse.ArgumentParser(
@@ -86,4 +122,10 @@ parser.add_argument(
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    load_data(args)
+    model, training_data, testing_data = load_data(args)
+    for input_test in testing_data:
+        print type(input_test)
+        test_SVM(model, training_data, testing_data)
+
+    print 'Tests complete'
+
