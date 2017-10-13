@@ -327,7 +327,9 @@ def adapt(d, p, x_t):
 
     if x_t['category'] == 'pos':
         # logic for positive ex, i.e. if x_t is from positive examples
-        q = min(1, (A - D_t + E_t - C) / (A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_t - E_t)))
+        q_num = float( A - D_t + E_t - C)
+        q_denom = A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_t - E_t)
+        q = q_num/q_denom
 
         # Adapt positive alphas (coefficients)
         old_alpha = p['alpha_i'] 
@@ -352,7 +354,9 @@ def adapt(d, p, x_t):
 
     elif x_t['category'] == 'neg':
         # logic for negative ex, i.e. if x_t is from negative examples
-        q = min(1, (B - E_t + D_t - C) / (B + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (E_t - D_t)))
+        q_num = float(B - E_t + D_t - C)
+        q_denom = B + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (E_t - D_t)
+        q = q_num/q_denom
 
         # Adapt positive alphas (coefficients)
         old_alpha = p['alpha_j'] 
