@@ -72,7 +72,10 @@ def calc_lambda(X_plus, X_minus):
     for X_minus_i in X_minus:
         r_minus = max(r_minus, np.linalg.norm(X_minus_i - m_minus))
 
-    return 0.5 * r / (r_plus + r_minus)  # lambda <= r / (r+ + r-)
+    # lambda <= r / (r+ + r-)
+    lam = 0.5 * r / (r_plus + r_minus)
+    # return lambda and the centroids
+    return lam, m_plus, m_minus
 
 
 def calc_mi(x_k, p, ind):
@@ -162,16 +165,26 @@ def init_data(args):
     if len(X_plus) != len(I_plus) or len(X_minus) != len(I_minus):
         raise Exception('[ERROR] Init filter is not working')
 
+    # scaled to lambda
+    lam, m_plus, m_minus = calc_lambda(X_plus, X_minus)
+    for i in range(len(X_plus)):
+        X_plus[i] = lam * X_plus[i] + (1 - lam) * m_plus
+    for i in range (len(X_minus)):
+        X_minus[i] = lam * X_minus[i] + (1 - lam) * m_minus
+
+    print 'xplus' + str(X_plus)
+    print 'xminus' + str(X_minus)
+
     ret = {
         'X_plus': X_plus,
         'X_minus': X_minus,
         'I_plus': I_plus,
         'I_minus': I_minus
     }
-    print 'lambda: ' + str(calc_lambda(X_plus, X_minus))
+
     print 'Data inputs initialized'
 
-    return ret # Vectors in X by class and index
+    return ret  # Vectors in X by class and index
 
 
 ############################################################
