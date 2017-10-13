@@ -11,7 +11,7 @@ import pickle
 from sk_train import poly_kernel, rep_data
 
 
-testing_class = 'O'
+testing_class = 'W'
 
 def load_data(args):
     '''
@@ -148,23 +148,32 @@ if __name__ == '__main__':
         g = test_SVM(model, input_test)
         if g:
             if str(i) in I_plus:
-                print str(i) + ' Correct'
+                print str(i+1) + ' Correct'
                 results['Correct'] += 1
             else:
-                print str(i) + ' False Positive'
+                print str(i+1) + ' False Positive'
                 results['False Positive'] += 1
         else:
             if str(i) not in I_plus:
-                print str(i) + ' Correct'
+                print str(i+1) + ' Correct'
                 results['Correct'] += 1
             else:
                 print str(i) + ' False Negative'
                 results['False Negative'] += 1
 
+    # for debugging --
+    print 'Num Correct: ' + str(results['Correct'])
+    print 'num positives: ' + str(len(I_plus))
+    print 'out of: ' + str(len(testing_data))
+    # ----------------
+
     for result in results:
         results[result] /= float(len(testing_data))
 
-    print str(results)
 
-    print 'Tests complete'
+
+    print 'Fraction Correct: ' + str(results['Correct'])
+    print 'Fraction False Positive: ' + str(results['False Positive'])
+    print 'Fraction False Negative: ' + str(results['False Negative'])
+    # print 'Tests complete'
 
