@@ -22,10 +22,17 @@ def poly_kernel(x, x_i, p=4, c=1):
     """
     :param x_t: training input
     :param x_i: input vector
-    :returns type int:
+    :returns type int: The kernel output if successful; otherwise, 0
     """
     x_t = np.transpose(x)
-    return (np.dot(x_t, x_i) + c)**p
+    try:
+        return (np.dot(x_t, x_i) + c)**p
+    except ValueError:
+        print 'Input: {}'.format(x_t.shape)
+        print 'Input: {}'.format(x_i)
+        raise Exception('Kernel fnc cannot dot vectors of diff dims')
+
+    return 0
 
 
 def calc_lambda(X_plus, X_minus):
