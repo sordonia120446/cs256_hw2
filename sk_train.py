@@ -63,12 +63,13 @@ def calc_lambda(X_plus, X_minus):
     m_plus /= float(len(X_plus))
     m_minus /= float(len(X_minus))
 
-    print 'm_plus: ' + str(m_plus) + ' len: ' + str(len(m_plus))
-    print 'm_minus: ' + str(m_minus) + ' len: ' + str(len(m_minus))
+    # print 'm_plus: ' + str(m_plus) + ' len: ' + str(len(m_plus))
+    # print 'm_minus: ' + str(m_minus) + ' len: ' + str(len(m_minus))
 
     # calculate r from m_plus and m_minus (Euclidean distance between centroids)
     r = np.linalg.norm(m_plus - m_minus)
-    print 'r: ' + str(r)
+    # print 'r: ' + str(r)
+
     # calculate r_plus (radius of positive convex hull)
     r_plus = 0
     for X_plus_i in X_plus:
@@ -86,15 +87,15 @@ def calc_lambda(X_plus, X_minus):
     return lam, m_plus, m_minus
 
 
-def scale_inputs(X_plus, X_minus, lam, m_plus, m_minus):
+def scale_inputs(X_plus, X_minus):
     lam, m_plus, m_minus = calc_lambda(X_plus, X_minus)
     for i, x_i in enumerate(X_plus):
         X_plus[i] = lam * x_i + (1 - lam) * m_plus
     for j, x_j in enumerate(X_minus):
         X_minus[j] = lam * x_j + (1 - lam) * m_minus
 
-    print 'xplus' + str(X_plus)
-    print 'xminus' + str(X_minus)
+    # print 'xplus' + str(X_plus)
+    # print 'xminus' + str(X_minus)
     return X_plus, X_minus
 
 
@@ -186,6 +187,7 @@ def init_data(args):
         raise Exception('[ERROR] Init filter is not working')
 
     # TODO scaled to lambda
+    X_plus, X_minus = scale_inputs(X_plus, X_minus)
 
     ret = {
         'X_plus': X_plus,

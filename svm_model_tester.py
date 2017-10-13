@@ -97,7 +97,7 @@ def test_SVM(p, x):
     A = p['A']
     B = p['B']
     g = sum_total + 0.5*(B - A)
-
+    print g
     return True if g >= 0 else False
 
 
