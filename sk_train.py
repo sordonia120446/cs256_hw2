@@ -329,9 +329,15 @@ def adapt(d, p, x_t):
         # logic for positive ex, i.e. if x_t is from positive examples
         q = min(1, (A - D_t + E_t - C) / (A + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (D_t - E_t)))
 
-        alpha = p['alpha_i'] # Adapt positive alphas (coefficients)
-        for i in alpha:
-            alpha[i] = (1 - q) * alpha[i] + q * delta_i_t(i, t)
+        # Adapt positive alphas (coefficients)
+        old_alpha = p['alpha_i'] 
+        new_alpha = np.zeros(old_alpha.shape)
+
+        for i, a_i in enumerate(old_alpha):
+            new_alpha[i] = (1 - q) * old_alpha[i] + q * delta_i_t(i, t)
+
+        # Update alpha_i
+        p['alpha_i'] = new_alpha
 
         # Update kernel functions
         p['A'] = A * (1 - q)**2 + 2 * (1 - q) * q * D_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
@@ -342,15 +348,21 @@ def adapt(d, p, x_t):
             D[ind] = (1 - q)*D_i + q*poly_kernel(x_t['x_t'], x_t['x_t'])
 
         p['D'] = D
-            
+
 
     elif x_t['category'] == 'neg':
         # logic for negative ex, i.e. if x_t is from negative examples
         q = min(1, (B - E_t + D_t - C) / (B + poly_kernel(x_t['x_t'], x_t['x_t']) - 2 * (E_t - D_t)))
 
-        alpha = p['alpha_j'] # Adapt negative alphas (coefficients)
-        for j in alpha:
-            alpha[j] = (1 - q) * alpha[j] + q * delta_i_t(j, t)
+        # Adapt positive alphas (coefficients)
+        old_alpha = p['alpha_j'] 
+        new_alpha = np.zeros(old_alpha.shape)
+
+        for j, a_i in enumerate(old_alpha):
+            new_alpha[j] = (1 - q) * old_alpha[j] + q * delta_i_t(j, t)
+
+        # Update alpha_i
+        p['alpha_j'] = new_alpha
 
         # Update kernel functions
         p['B'] = B * (1 - q)**2 + 2 * (1 - q) * q * E_t + q**2 * poly_kernel(x_t['x_t'], x_t['x_t'])
