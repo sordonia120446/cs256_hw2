@@ -156,7 +156,7 @@ def init_data(args):
             X_minus.append(rep_data(img_path))
             I_minus.append(ind)
 
-    if len(X_plus) < 1:
+    if len(X_plus) < 1 or len(X_minus) < 1:
         raise Exception('NO DATA')
 
     if len(X_plus) != len(I_plus) or len(X_minus) != len(I_minus):
