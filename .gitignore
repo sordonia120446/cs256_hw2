@@ -42,8 +42,8 @@ tmtagsHistory
 
 # Virtual Env #
 # #################
-venv/
-env.sh
+*venv/
+*env.sh
 
 # Virtual Env #
 # #################
