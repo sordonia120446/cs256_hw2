@@ -1,3 +1,9 @@
-# CS256 Homework 2
+# CS256 Homework 4
 
-An SVM that recognizes Zener Cards using the S-K algorithm.
+# Summary
+
+A comparison of CNN versus SVM to classify Zener Card images.
+
+# References
+
+Forked off zener card generator and SVM from [Homework 2 repo](https://github.com/nmauthes/cs256_hw2)
