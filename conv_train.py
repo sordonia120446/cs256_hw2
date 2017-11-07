@@ -76,7 +76,12 @@ model = Net()
 if args.cuda:
     model.cuda()
 
-optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
+optimizer = optim.SGD(
+    model.parameters(),
+    lr=args.lr,
+    momentum=args.momentum,
+    weight_decay=0  # L2 penalty value
+)
 
 def train(epoch):
     model.train()
