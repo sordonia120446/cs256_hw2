@@ -3,8 +3,9 @@ CNN for zener card classification.
 
 :authors Jason, Nick, Sam
 """
-from __future__ import print_function
+
 import argparse
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
