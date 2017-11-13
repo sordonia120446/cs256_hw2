@@ -7,6 +7,7 @@ CNN for zener card classification.
 import argparse
 
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -69,6 +70,39 @@ def test():
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
+
+
+class ZenerDataset(Dataset):
+
+    def __init__(self, data_dir, transform=None):
+        self.data_dir = data_dir
+        self.transform = transform
+
+    def __len__(self):
+        pass
+    
+    def __getitem__(self, img_path):
+        img_data = rep_data(img_path)
+        
+        if transform:
+            img_data = transform(img_data)
+
+        return img_data
+
+
+class ToTensor(object):
+    """Convert ndarrays in sample to Tensors."""
+
+    def __call__(self, sample):
+        # TODO replace with zener card transform logic
+        image, landmarks = sample['image'], sample['landmarks']
+
+        # swap color axis because
+        # numpy image: H x W x C
+        # torch image: C X H X W
+        image = image.transpose((2, 0, 1))
+        return {'image': torch.from_numpy(image),
+                'landmarks': torch.from_numpy(landmarks)}
 
 
 ############################################################
