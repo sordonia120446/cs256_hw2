@@ -14,6 +14,9 @@ import torch.optim as optim
 from torchvision import datasets, transforms
 from torch.autograd import Variable
 
+from utils import init_data
+
+# Constants
 RANDOM_SEED = 1
 
 
@@ -147,22 +150,25 @@ parser.add_argument(
     type=int,
     help='Number of training epochs.'
 )
-# parser.add_argument(
-#     'class_letter',
-#     help='Specify the class letter [P, W, Q, S].'
-# )
-# parser.add_argument(
-#     'model_file_name',
-#     help='Filename to output trained model.'
-# )
-# parser.add_argument(
-#     'train_folder_name',
-#     help='Locating of training data.'
-# )
+parser.add_argument(
+    'class_letter',
+    help='Specify the class letter [P, W, Q, S].'
+)
+parser.add_argument(
+    'model_file_name',
+    help='Filename to output trained model.'
+)
+parser.add_argument(
+    'train_folder_name',
+    help='Locating of training data.'
+)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
+
+    # Init datasets
+    input_data = init_data(args)  # dict of input data
 
     # CUDA setup
     args.cuda = not args.no_cuda and torch.cuda.is_available()
