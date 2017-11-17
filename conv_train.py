@@ -70,6 +70,22 @@ def test():
         test_loss, correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
 
+def parse_network_description(network_description):
+    '''
+    Parse the file containing the network description and return a set of number to be used when
+    constructing CNN
+
+    :param network_description: The path to the file containing the network description
+    :return: A 2D list where each index is structured as: [#_layers feature_map] or [#_layers]
+    '''
+
+    net_desc = []
+    with open(network_description, 'r') as f:
+        for line in f.read().splitlines():
+            net_desc.append([int(x) for x in line.split(' ')])
+
+    return net_desc
+
 
 ############################################################
 #CLARGS
