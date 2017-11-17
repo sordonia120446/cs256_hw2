@@ -28,8 +28,8 @@ def poly_kernel(x, x_i, p=4, c=1):
     try:
         return (np.dot(x_t, x_i) + c)**p
     except ValueError:
-        print 'Input: {}'.format(x_t.shape)
-        print 'Input: {}'.format(x_i)
+        print('Input: {}'.format(x_t.shape))
+        print('Input: {}'.format(x_i))
         raise Exception('Kernel fnc cannot dot vectors of diff dims')
 
     return 0
@@ -63,12 +63,8 @@ def calc_lambda(X_plus, X_minus):
     m_plus /= float(len(X_plus))
     m_minus /= float(len(X_minus))
 
-    # print 'm_plus: ' + str(m_plus) + ' len: ' + str(len(m_plus))
-    # print 'm_minus: ' + str(m_minus) + ' len: ' + str(len(m_minus))
-
     # calculate r from m_plus and m_minus (Euclidean distance between centroids)
     r = np.linalg.norm(m_plus - m_minus)
-    # print 'r: ' + str(r)
 
     # calculate r_plus (radius of positive convex hull)
     r_plus = 0
@@ -81,7 +77,7 @@ def calc_lambda(X_plus, X_minus):
         r_minus = max(r_minus, np.linalg.norm(X_minus_i - m_minus))
 
     lam = (0.5 * r) / (r_plus + r_minus)
-    print 'lambda = {}'.format(lam)
+    print('lambda = {}'.format(lam))
 
     # return lambda and the centroids
     return lam, m_plus, m_minus
@@ -196,7 +192,7 @@ def init_data(args):
         'I_minus': I_minus
     }
 
-    print 'Data inputs initialized'
+    print('Data inputs initialized')
 
     return ret  # Vectors in X by class and index
 
@@ -325,7 +321,7 @@ def should_stop(d, p, epsilon):
 
     # Compare to epsilon
     if m_delta < epsilon:
-        print 'Stop condition met for tolerance: {}'.format(m_delta)
+        print('Stop condition met for tolerance: {}'.format(m_delta))
         return True, ret
 
     return False, ret
@@ -427,18 +423,18 @@ def sk_algorithm(input_data, args):
 
         # Print alphas & letters on every 1000th step
         if i % 1000 == 0:
-            print '\nOn training step {}'.format(i)
+            print('\nOn training step {}'.format(i))
             #print params
 
         # Check for stop condition
         is_done, x_t = should_stop(input_data, params, args.epsilon)
         if is_done:
-            print 'Completed training at step {step}'.format(step=i)
+            print('Completed training at step {step}'.format(step=i))
             return params
 
         params = adapt(input_data, params, x_t)
 
-    print '\nTrained for {}'.format(args.max_updates)
+    print('\nTrained for {}'.format(args.max_updates))
 
     return params
 
@@ -529,8 +525,8 @@ if __name__ == '__main__':
 
     # Write model to file
     if serialize_model(params, input_data, args.model_file_name):
-        print 'Model saved to {}'.format(args.model_file_name)
+        print('Model saved to {}'.format(args.model_file_name))
 
-    print '\n Final output:  '
+    print('\n Final output:  ')
 
 
