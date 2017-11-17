@@ -7,12 +7,20 @@ CNN for zener card classification.
 import argparse
 
 import torch
+from torch.utils.data import Dataset, DataLoader
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
+from torchvision import transforms
 from torch.autograd import Variable
 
+from utils import init_data
+
+##################################################################################################
+# CNN
+##################################################################################################
+
+# Constants
 RANDOM_SEED = 1
 
 
@@ -35,12 +43,17 @@ class Net(nn.Module):
         return F.log_softmax(x)
 
 
-def train(epoch):
+def train(epoch, train_loader):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
+        print(f'Data: {type(data)}')
+        print(f'Target: {type(target)}')
+        print(target)
         if args.cuda:
             data, target = data.cuda(), target.cuda()
         data, target = Variable(data), Variable(target)
+        print(f'Data: {data}')
+        print(f'Target: {target}')
         optimizer.zero_grad()
         output = model(data)
         loss = F.nll_loss(output, target)
@@ -52,7 +65,7 @@ def train(epoch):
                 100. * batch_idx / len(train_loader), loss.data[0]))
 
 
-def test():
+def test(test_loader):
     model.eval()
     test_loss = 0
     correct = 0
@@ -71,9 +84,61 @@ def test():
         100. * correct / len(test_loader.dataset)))
 
 
-############################################################
-#CLARGS
-############################################################
+##################################################################################################
+# Data Processing
+##################################################################################################
+
+
+class ZenerDataset(Dataset):
+
+    def __init__(self, args, train=True, k_fold=1, transform=None, target_transform=None):
+        self.args = args
+        self.train = train
+        self.k_fold = k_fold  # split the training & test data    
+        self.transform = transform
+        self.target_transform = target_transform
+
+        input_data = init_data(args, as_PIL=True)
+
+        if self.train:
+            self.train_data = input_data['X_plus'] + input_data['X_minus']
+            self.train_labels = input_data['Y_plus'] + input_data['Y_minus']
+        else:
+            self.test_data = input_data['X_plus'] + input_data['X_minus']
+            self.test_labels = input_data['Y_plus'] + input_data['Y_minus']
+
+
+    def __getitem__(self, index):
+        """
+        Args:
+            index (int): Index
+
+        Returns:
+            tuple: (image, target) where target is index of the target class.
+        """
+        if self.train:
+            img, target = self.train_data[index], self.train_labels[index]
+        else:
+            img, target = self.test_data[index], self.test_labels[index]
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return img, target
+
+    def __len__(self):
+        if self.train:
+            return len(self.train_data)
+        else:
+            return len(self.test_data)
+
+
+##################################################################################################
+# CLARGS
+##################################################################################################
 parser = argparse.ArgumentParser(
     description='CNN for zener card classification',
     formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -113,18 +178,18 @@ parser.add_argument(
     type=int,
     help='Number of training epochs.'
 )
-# parser.add_argument(
-#     'class_letter',
-#     help='Specify the class letter [P, W, Q, S].'
-# )
-# parser.add_argument(
-#     'model_file_name',
-#     help='Filename to output trained model.'
-# )
-# parser.add_argument(
-#     'train_folder_name',
-#     help='Locating of training data.'
-# )
+parser.add_argument(
+    'class_letter',
+    help='Specify the class letter [P, W, Q, S].'
+)
+parser.add_argument(
+    'model_file_name',
+    help='Filename to output trained model.'
+)
+parser.add_argument(
+    'train_folder_name',
+    help='Locating of training data.'
+)
 
 
 if __name__ == '__main__':
@@ -137,10 +202,10 @@ if __name__ == '__main__':
         torch.cuda.manual_seed(RANDOM_SEED)
     kwargs = {'num_workers': 1, 'pin_memory': True} if args.cuda else {}
 
+    # CNN setup
     model = Net()
     if args.cuda:
         model.cuda()
-
     optimizer = optim.SGD(
         model.parameters(),
         lr=args.lr,
@@ -150,20 +215,26 @@ if __name__ == '__main__':
 
     # Data import
     train_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=True, download=True,
-                    transform=transforms.Compose([
-                        transforms.ToTensor(),
-                        transforms.Normalize((0.1307,), (0.3081,))
-                    ])),
+        ZenerDataset(
+            args,
+            train=True,
+            transform=transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))
+            ])),
         batch_size=args.batch_size, shuffle=True, **kwargs)
+
     test_loader = torch.utils.data.DataLoader(
-        datasets.MNIST('../data', train=False, transform=transforms.Compose([
-                        transforms.ToTensor(),
-                        transforms.Normalize((0.1307,), (0.3081,))
-                    ])),
+        ZenerDataset(
+            args,
+            train=False,
+            transform=transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.1307,), (0.3081,))
+            ])),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
     # Train & test per epoch
     for epoch in range(1, args.max_updates + 1):
-        train(epoch)
-        test()
+        train(epoch, train_loader)
+        test(test_loader)
