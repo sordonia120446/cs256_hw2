@@ -9,7 +9,7 @@ import os
 import numpy as np
 from PIL import Image
 
-def init_data(args):
+def init_data(args, as_PIL=False):
     """
     Initialize the preliminaries for S-K algo learning of SVM
 
@@ -21,6 +21,8 @@ def init_data(args):
 
     X_plus = []
     X_minus = []
+    Y_plus = []
+    Y_minus = []
     I_plus = []
     I_minus = []
 
@@ -29,10 +31,12 @@ def init_data(args):
         ind, letter = f_name[0].split('_')
 
         if letter.upper() == args.class_letter.upper():
-            X_plus.append(rep_data(img_path))
+            X_plus.append(rep_data(img_path, as_PIL))
+            Y_plus.append(letter.upper())
             I_plus.append(ind)
         else:
-            X_minus.append(rep_data(img_path))
+            X_minus.append(rep_data(img_path, as_PIL))
+            Y_minus.append(letter.upper())        
             I_minus.append(ind)
 
     if len(X_plus) < 1 or len(X_minus) < 1:
@@ -46,6 +50,8 @@ def init_data(args):
     ret = {
         'X_plus': X_plus,
         'X_minus': X_minus,
+        'Y_plus': Y_plus,
+        'Y_minus': Y_minus,
         'I_plus': I_plus,
         'I_minus': I_minus
     }
@@ -55,7 +61,7 @@ def init_data(args):
     return ret  # Vectors in X by class and index
 
 
-def rep_data(img_path):
+def rep_data(img_path, as_PIL=False):
     """
     The contents of this image as a sequence object containing pixel values. The sequence object is flattened, so that values for line one follow directly after the values of line zero, and so on.
 
@@ -65,6 +71,9 @@ def rep_data(img_path):
     :returns numpy arrays: A vector representation of the image.
     """
     img = Image.open(img_path)
+    if as_PIL:
+        return img
+
     arr = np.array(list(img.getdata()), int)
 
     return arr/255 # normalize to 1's for white; 0's otherwise
