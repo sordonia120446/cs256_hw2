@@ -32,11 +32,11 @@ def init_data(args, as_PIL=False):
 
         if letter.upper() == args.class_letter.upper():
             X_plus.append(rep_data(img_path, as_PIL))
-            Y_plus.append(letter.upper())
+            Y_plus.append(ord(letter.upper()))
             I_plus.append(ind)
         else:
             X_minus.append(rep_data(img_path, as_PIL))
-            Y_minus.append(letter.upper())        
+            Y_minus.append(ord(letter.upper()))
             I_minus.append(ind)
 
     if len(X_plus) < 1 or len(X_minus) < 1:
