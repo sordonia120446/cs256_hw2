@@ -37,7 +37,7 @@ def draw_shape(bg, shape, pos_offset=0, size_offset=0, rotation=0):
 
     mask = ImageOps.invert(src).rotate(rotation).resize((bg.size[0] + size_offset, bg.size[1] + size_offset)).convert('1')
 
-    bg.paste(0, box=((bg.size[0] - mask.size[0]) / 2 + pos_offset, (bg.size[1] - mask.size[1]) / 2 + pos_offset), mask=mask)
+    bg.paste(0, box=((bg.size[0] - mask.size[0]) // 2 + pos_offset, (bg.size[1] - mask.size[1]) // 2 + pos_offset), mask=mask)
 
 def draw_noise(im, density=0.02, iterations=50):
     '''
