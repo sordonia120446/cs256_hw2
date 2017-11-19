@@ -318,24 +318,41 @@ def main(args):
 """CLARGS"""
 
 parser = argparse.ArgumentParser(
-    description='Train and test the neural net',
+    description='Train and test CNN to classify Zener shapes',
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog='For further questions, please consult the README.'
 )
 
-parser.add_argument(
-    'mode',
-    help='Specify whether to test or train as well as how to train'
-)
 
 parser.add_argument(
-    'model_file',
-    help='Path to the file containing the trained weights'
+    'cost',
+    help='The type of loss function to use with the CNN [cross | cross-l1 | cross-l2]'
 )
-
 parser.add_argument(
-    'data_folder',
-    help='Path to the folder containing training/testing data'
+    'network_description',
+    help='Path to a file containing a description of the CNN architecture'
+)
+parser.add_argument(
+    'epsilon',
+    type=float,
+    help='Epsilon error tolerance.'
+)
+parser.add_argument(
+    'max_updates',
+    type=int,
+    help='Training steps/epochs.'
+)
+parser.add_argument(
+    'class_letter',
+    help='Specify the class letter [P, W, Q, S].'
+)
+parser.add_argument(
+    'model_file_name',
+    help='Filename to output trained model.'
+)
+parser.add_argument(
+    'train_folder_name',
+    help='Locating of training data.'
 )
 
 if __name__ == '__main__':
