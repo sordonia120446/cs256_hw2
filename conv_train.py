@@ -19,6 +19,8 @@ import time
 import numpy as np
 import tensorflow as tf
 
+from utils import init_data
+
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
@@ -34,35 +36,35 @@ label_map = {
 MINIBATCH_SIZE = 100
 
 
-def convert_data(input_line):
-    """
-    Converts the data from raw DNA to ASCII char numpy array.
+# def convert_data(input_line):
+#     """
+#     Converts the data from raw DNA to ASCII char numpy array.
 
-    :param input_line: line of input data (DNA & label)
-    :returns type <numpy arr>: tf-friendly input vector
-    """
+#     :param input_line: line of input data (DNA & label)
+#     :returns type <numpy arr>: tf-friendly input vector
+#     """
     
-    try:
-        data, label = input_line.split(",")
-    except ValueError:
-        raise Exception('Check the input file format')
+#     try:
+#         data, label = input_line.split(",")
+#     except ValueError:
+#         raise Exception('Check the input file format')
 
-    data.strip()  # remove whitespace
-    label.strip()  # remove whitespace
+#     data.strip()  # remove whitespace
+#     label.strip()  # remove whitespace
 
-    # Convert letters into ASCII
-    data = [ord(c) for c in data]
+#     # Convert letters into ASCII
+#     data = [ord(c) for c in data]
 
-    # Map labels to ints
-    try:
-        label = label_map[label]
-    except KeyError:
-        raise Exception(f'Check spelling on label {label}')
+#     # Map labels to ints
+#     try:
+#         label = label_map[label]
+#     except KeyError:
+#         raise Exception(f'Check spelling on label {label}')
 
-    return np.array(data, dtype=np.float32), label
+#     return np.array(data, dtype=np.float32), label
 
 
-def load_data(data_folder):
+def load_data(args):
     """
     Iterate through each file in data_folder and construct
     the input data features (40-len DNA).
@@ -72,19 +74,29 @@ def load_data(data_folder):
     :returns type list: list of dicts for DNA-arr & label
     """
     
-    data_files = os.path.join(data_folder, '*.txt')
-    data = []
-    for f_path in glob.glob(data_files):
+    data = init_data(args)
+    x = data['X_plus'] + data['X_minus']
+    y = data['Y_plus'] + data['Y_minus']
 
-        with open(f_path) as f_in:
-            for line in f_in.read().splitlines():
-                dna_arr, label = convert_data(line)
-                data.append({
-                    'x': dna_arr,
-                    'y': label
-                })
+    ret = []
 
-    return data
+    for img, label in zip(x, y):
+        ret.append({
+            'x': img,
+            'y': label
+        })
+
+    # for f_path in glob.glob(data_files):
+
+    #     with open(f_path) as f_in:
+    #         for line in f_in.read().splitlines():
+    #             dna_arr, label = convert_data(line)
+    #             data.append({
+    #                 'x': dna_arr,
+    #                 'y': label
+    #             })
+
+    return ret
 
 
 def get_confusion_matrix(labels, predictions):
@@ -111,73 +123,106 @@ def get_confusion_matrix(labels, predictions):
         return tf.convert_to_tensor(matrix_sum), update
 
 
-def dnn_model_fn(features, labels, mode):
-    """
-    Multi-layer DNN with dense hidden layers & relu activation.
+    def cnn_model_fn(features, labels, mode):
+        """Model function for CNN."""
+        # Input Layer
+        # Reshape X to 4-D tensor: [batch_size, width, height, channels]
+        # MNIST images are 28x28 pixels, and have one color channel
+        input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
 
-    :param features: the features to train/test on
-    :param labels: the labels on each DNA to check against prediction
-    :param mode: can be train, 5fold, or test
-    :returns type tf: tf goodness
-    """
+        # Convolutional Layer #1
+        # Computes 32 features using a 5x5 filter with ReLU activation.
+        # Padding is added to preserve width and height.
+        # Input Tensor Shape: [batch_size, 28, 28, 1]
+        # Output Tensor Shape: [batch_size, 28, 28, 32]
+        conv1 = tf.layers.conv2d(
+            inputs=input_layer,
+            filters=32,
+            kernel_size=[5, 5],
+            padding="same",
+            activation=tf.nn.relu)
 
-    # Shape input layer
-    l0 = tf.reshape(features['x'], [-1, 40])
+        # Pooling Layer #1
+        # First max pooling layer with a 2x2 filter and stride of 2
+        # Input Tensor Shape: [batch_size, 28, 28, 32]
+        # Output Tensor Shape: [batch_size, 14, 14, 32]
+        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
 
-    # Define hidden layers
-    l1 = tf.layers.dense(inputs=l0, units=40, activation=tf.nn.relu)
-    l2 = tf.layers.dense(inputs=l1, units=40, activation=tf.nn.relu)
-    l3 = tf.layers.dense(inputs=l2, units=40, activation=tf.nn.relu)
-    l4 = tf.layers.dense(inputs=l3, units=40, activation=tf.nn.relu)
+        # Convolutional Layer #2
+        # Computes 64 features using a 5x5 filter.
+        # Padding is added to preserve width and height.
+        # Input Tensor Shape: [batch_size, 14, 14, 32]
+        # Output Tensor Shape: [batch_size, 14, 14, 64]
+        conv2 = tf.layers.conv2d(
+            inputs=pool1,
+            filters=64,
+            kernel_size=[5, 5],
+            padding="same",
+            activation=tf.nn.relu)
 
-    # Define output (logit) layer
-    logits = tf.layers.dense(inputs=l4, units=6)
+        # Pooling Layer #2
+        # Second max pooling layer with a 2x2 filter and stride of 2
+        # Input Tensor Shape: [batch_size, 14, 14, 64]
+        # Output Tensor Shape: [batch_size, 7, 7, 64]
+        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
 
-    predictions = {
-        "classes": tf.argmax(input=logits, axis=1),
-        "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
-    }
+        # Flatten tensor into a batch of vectors
+        # Input Tensor Shape: [batch_size, 7, 7, 64]
+        # Output Tensor Shape: [batch_size, 7 * 7 * 64]
+        pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
 
-    if mode == tf.estimator.ModeKeys.PREDICT:
-        return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
+        # Dense Layer
+        # Densely connected layer with 1024 neurons
+        # Input Tensor Shape: [batch_size, 7 * 7 * 64]
+        # Output Tensor Shape: [batch_size, 1024]
+        dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
 
-    # Calculate Loss (for both TRAIN and EVAL modes)
-    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=6)
-    loss = tf.losses.softmax_cross_entropy(
-        onehot_labels=onehot_labels,
-        logits=logits
-    )
+        # Add dropout operation; 0.6 probability that element will be kept
+        dropout = tf.layers.dropout(
+            inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
 
-    # Configure the Training Op (for TRAIN mode)
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
-        train_op = optimizer.minimize(
-            loss=loss,
-            global_step=tf.train.get_global_step())
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+        # Logits layer
+        # Input Tensor Shape: [batch_size, 1024]
+        # Output Tensor Shape: [batch_size, 10]
+        logits = tf.layers.dense(inputs=dropout, units=10)
 
-    # Add evaluation metrics (for EVAL mode)
-    eval_metric_ops = {
-        "accuracy": tf.metrics.accuracy(
-            labels=labels,
-            predictions=predictions["classes"]
-        ),
-        "confusion_matrix": get_confusion_matrix(labels, predictions["classes"])
-    }
+        predictions = {
+            # Generate predictions (for PREDICT and EVAL mode)
+            "classes": tf.argmax(input=logits, axis=1),
+            # Add `softmax_tensor` to the graph. It is used for PREDICT and by the
+            # `logging_hook`.
+            "probabilities": tf.nn.softmax(logits, name="softmax_tensor")
+        }
+        if mode == tf.estimator.ModeKeys.PREDICT:
+            return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
-    return tf.estimator.EstimatorSpec(
-        mode=mode,
-        loss=loss,
-        eval_metric_ops=eval_metric_ops
-    )
+        # Calculate Loss (for both TRAIN and EVAL modes)
+        onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=10)
+        loss = tf.losses.softmax_cross_entropy(
+            onehot_labels=onehot_labels, logits=logits)
+
+        # Configure the Training Op (for TRAIN mode)
+        if mode == tf.estimator.ModeKeys.TRAIN:
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+            train_op = optimizer.minimize(
+                loss=loss,
+                global_step=tf.train.get_global_step())
+            return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
+
+        # Add evaluation metrics (for EVAL mode)
+        eval_metric_ops = {
+            "accuracy": tf.metrics.accuracy(
+                labels=labels, predictions=predictions["classes"])}
+        return tf.estimator.EstimatorSpec(
+            mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
 def train_mode(data, model_name):
     # Init estimator
-    model_dir = os.path.join(model_name)
     sticky_classifier = tf.estimator.Estimator(
         model_fn=dnn_model_fn,
-        model_dir=model_dir
+        model_dir=model_name,
+        **kwargs
     )
 
     # Set up logging for predictions
@@ -211,10 +256,9 @@ def train_mode(data, model_name):
 
 def test_mode(data, model_name):
     # Init estimator
-    model_dir = os.path.join(model_name)
     sticky_classifier = tf.estimator.Estimator(
         model_fn=dnn_model_fn,
-        model_dir=model_dir
+        model_dir=model_name
     )
     features = np.asarray([d['x'] for d in data])
     labels = np.asarray([d['y'] for d in data], dtype=np.float32)
@@ -235,84 +279,120 @@ def test_mode(data, model_name):
 
 def main(args):
     # call function based on mode
-    data = load_data(args.data_folder)
-    model_name = args.model_file
-    if args.mode == 'train':
-        train_mode(data, model_name)
-        print('Processing complete!')
-        print(f'Total items trained on: {len(data)}')
-    elif args.mode == 'test':
-        test_mode(data, model_name)
-        print('Processing complete!')
-        print(f'Total items tested on: {len(data)}')
-    elif args.mode == '5fold':
-        k = 5
-        subset_size = int(len(data) / k)
-        subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
-        # if size of data isn't divisible by 5, have a larger kth subset
-        if len(data) % k != 0:
-            subsets[k - 1] = subsets[k - 1] + subsets[k]
-            del subsets[k]
-        accuracy = 0
-        # perform cross validation
-        for i in range(k):
-            # exclude subset i for training data
-            subsets_copy = list(subsets)
-            del subsets_copy[i]
-            training_set = []
-            for subset in subsets_copy:
-                training_set += subset
-            # train on training_set
-            train_mode(training_set, model_name)
-            # test on subset i
-            test_set = subsets[i]
-            accuracy += test_mode(test_set, model_name)
-            print('Processing complete!')
-            print(f'Total items trained on: {len(training_set)}')
-            print(f'Total items trained on: {len(test_set)}')
-        print('Average 5fold accuracy: ', str(accuracy / 5.0))
-    else:
-        # debugging
-        # Init estimator
-        model_dir = os.path.join(model_name)
-        sticky_classifier = tf.estimator.Estimator(
-            model_fn=dnn_model_fn,
-            model_dir=model_dir
-        )
+    train_data = load_data(args)
 
-        # Set up logging for predictions
-        # Log the values in the "Softmax" tensor with label "probabilities"
-        tensors_to_log = {"probabilities": "softmax_tensor"}
-        logging_hook = tf.train.LoggingTensorHook(
-            tensors=tensors_to_log,
-            every_n_iter=1000
-        )
+    features = np.asarray([d['x'] for d in train_data])
+    labels = np.asarray([d['y'] for d in train_data], dtype=np.float32)
 
-        features = np.asarray([d['x'] for d in data])
-        labels = np.asarray([d['y'] for d in data], dtype=np.float32)
+    # Create the Estimator
+    zener_classifier = tf.estimator.Estimator(
+        model_fn=cnn_model_fn, model_dir=args.model_file_name)
 
-        train_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={'x': features},
-            y=labels,
-            batch_size=MINIBATCH_SIZE,
-            num_epochs=None,
-            shuffle=True
-        )
-        sticky_classifier.train(
-            input_fn=train_input_fn,
-            steps=20000,
-            hooks=[logging_hook]
-        )
+    # Set up logging for predictions
+    # Log the values in the "Softmax" tensor with label "probabilities"
+    tensors_to_log = {"probabilities": "softmax_tensor"}
+    logging_hook = tf.train.LoggingTensorHook(
+        tensors=tensors_to_log, every_n_iter=50)
 
-        # eval
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={"x": features},
-            y=labels,
-            num_epochs=1,
-            shuffle=False
-        )
-        eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
-        print(eval_results)
+    # Train the model
+    train_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": features},
+        y=labels,
+        batch_size=100,
+        num_epochs=None,
+        shuffle=True)
+    zener_classifier.train(
+        input_fn=train_input_fn,
+        steps=20000,
+        hooks=[logging_hook])
+
+    # # Evaluate the model and print results
+    # eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    #     x={"x": eval_data},
+    #     y=eval_labels,
+    #     num_epochs=1,
+    #     shuffle=False)
+    # eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
+    # print(eval_results)
+
+    
+    # model_name = args.model_file_name
+    # if args.mode == 'train':
+    #     train_mode(data, model_name)
+    #     print('Processing complete!')
+    #     print(f'Total items trained on: {len(data)}')
+    # elif args.mode == 'test':
+    #     test_mode(data, model_name)
+    #     print('Processing complete!')
+    #     print(f'Total items tested on: {len(data)}')
+    # elif args.mode == '5fold':
+    #     k = 5
+    #     subset_size = int(len(data) / k)
+    #     subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
+    #     # if size of data isn't divisible by 5, have a larger kth subset
+    #     if len(data) % k != 0:
+    #         subsets[k - 1] = subsets[k - 1] + subsets[k]
+    #         del subsets[k]
+    #     accuracy = 0
+    #     # perform cross validation
+    #     for i in range(k):
+    #         # exclude subset i for training data
+    #         subsets_copy = list(subsets)
+    #         del subsets_copy[i]
+    #         training_set = []
+    #         for subset in subsets_copy:
+    #             training_set += subset
+    #         # train on training_set
+    #         train_mode(training_set, model_name)
+    #         # test on subset i
+    #         test_set = subsets[i]
+    #         accuracy += test_mode(test_set, model_name)
+    #         print('Processing complete!')
+    #         print(f'Total items trained on: {len(training_set)}')
+    #         print(f'Total items trained on: {len(test_set)}')
+    #     print('Average 5fold accuracy: ', str(accuracy / 5.0))
+    # else:
+    #     # debugging
+    #     # Init estimator
+    #     model_dir = os.path.join(model_name)
+    #     sticky_classifier = tf.estimator.Estimator(
+    #         model_fn=dnn_model_fn,
+    #         model_dir=model_dir
+    #     )
+
+    #     # Set up logging for predictions
+    #     # Log the values in the "Softmax" tensor with label "probabilities"
+    #     tensors_to_log = {"probabilities": "softmax_tensor"}
+    #     logging_hook = tf.train.LoggingTensorHook(
+    #         tensors=tensors_to_log,
+    #         every_n_iter=1000
+    #     )
+
+    #     features = np.asarray([d['x'] for d in data])
+    #     labels = np.asarray([d['y'] for d in data], dtype=np.float32)
+
+    #     train_input_fn = tf.estimator.inputs.numpy_input_fn(
+    #         x={'x': features},
+    #         y=labels,
+    #         batch_size=MINIBATCH_SIZE,
+    #         num_epochs=None,
+    #         shuffle=True
+    #     )
+    #     sticky_classifier.train(
+    #         input_fn=train_input_fn,
+    #         steps=20000,
+    #         hooks=[logging_hook]
+    #     )
+
+    #     # eval
+    #     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+    #         x={"x": features},
+    #         y=labels,
+    #         num_epochs=1,
+    #         shuffle=False
+    #     )
+    #     eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
+    #     print(eval_results)
 
 
 """CLARGS"""
