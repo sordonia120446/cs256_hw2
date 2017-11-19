@@ -139,7 +139,7 @@ def cnn_model_fn(features, labels, mode):
     # Logits layer
     # Input Tensor Shape: [batch_size, 256]
     # Output Tensor Shape: [batch_size, 4]
-    logits = tf.layers.dense(inputs=dropout, units=4)
+    logits = tf.layers.dense(inputs=dropout, units=5)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -152,7 +152,7 @@ def cnn_model_fn(features, labels, mode):
         return tf.estimator.EstimatorSpec(mode=mode, predictions=predictions)
 
     # Calculate Loss (for both TRAIN and EVAL modes)
-    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=4)
+    onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=5)
     loss = tf.losses.softmax_cross_entropy(
         onehot_labels=onehot_labels, logits=logits)
 

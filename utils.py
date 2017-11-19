@@ -76,4 +76,13 @@ def rep_data(img_path, as_PIL=False):
 
     arr = np.array(list(img.getdata()), int)
 
-    return arr/255 # normalize to 1's for white; 0's otherwise
+    # arr = (arr/255 + 1) % 2
+    #  black is 1, 0 is white
+
+    for i, element in np.ndenumerate(arr):
+        if element == 0:
+            arr[i] = -1
+        else:
+            arr[i] = 1
+
+    return arr
