@@ -123,68 +123,58 @@ def get_confusion_matrix(labels, predictions):
         return tf.convert_to_tensor(matrix_sum), update
 
 
-    def cnn_model_fn(features, labels, mode):
-        """Model function for CNN."""
-        # Input Layer
-        # Reshape X to 4-D tensor: [batch_size, width, height, channels]
-        # MNIST images are 28x28 pixels, and have one color channel
-        input_layer = tf.reshape(features["x"], [-1, 28, 28, 1])
+def cnn_model_fn(features, labels, mode):
+        ''' Builds a CNN model roughly like LeNet-5'''
+        input = tf.reshape(features['x'], [-1, 32, 32, 1])  # Input layer 32x32, 1 channel
 
-        # Convolutional Layer #1
-        # Computes 32 features using a 5x5 filter with ReLU activation.
-        # Padding is added to preserve width and height.
-        # Input Tensor Shape: [batch_size, 28, 28, 1]
-        # Output Tensor Shape: [batch_size, 28, 28, 32]
-        conv1 = tf.layers.conv2d(
-            inputs=input_layer,
-            filters=32,
+        # First conv layer
+        c1 = tf.layers.conv2d(
+            inputs=input,
+            filters=6,
             kernel_size=[5, 5],
-            padding="same",
-            activation=tf.nn.relu)
+            activation=tf.nn.relu
+        )
 
-        # Pooling Layer #1
-        # First max pooling layer with a 2x2 filter and stride of 2
-        # Input Tensor Shape: [batch_size, 28, 28, 32]
-        # Output Tensor Shape: [batch_size, 14, 14, 32]
-        pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2)
+        # Second pooling layer
+        s2 = tf.layers.max_pooling2d(  # Outputs 6 14x14 feature maps
+            inputs=c1,
+            pool_size=[2, 2],
+            strides=2
+        )
 
-        # Convolutional Layer #2
-        # Computes 64 features using a 5x5 filter.
-        # Padding is added to preserve width and height.
-        # Input Tensor Shape: [batch_size, 14, 14, 32]
-        # Output Tensor Shape: [batch_size, 14, 14, 64]
-        conv2 = tf.layers.conv2d(
-            inputs=pool1,
-            filters=64,
+        # Third conv layer
+        c3 = tf.layers.conv2d(  # Third conv layer
+            inputs=s2,
+            filters=16,
             kernel_size=[5, 5],
-            padding="same",
-            activation=tf.nn.relu)
+            activation=tf.nn.relu
+        )
 
-        # Pooling Layer #2
-        # Second max pooling layer with a 2x2 filter and stride of 2
-        # Input Tensor Shape: [batch_size, 14, 14, 64]
-        # Output Tensor Shape: [batch_size, 7, 7, 64]
-        pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2, 2], strides=2)
+        # Fourth pooling layer
+        s4 = tf.layers.max_pooling2d(
+            inputs=c3,
+            pool_size=[2, 2],
+            strides=2
+        )
 
-        # Flatten tensor into a batch of vectors
-        # Input Tensor Shape: [batch_size, 7, 7, 64]
-        # Output Tensor Shape: [batch_size, 7 * 7 * 64]
-        pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])
+        # Fifth conv layer
+        c5 = tf.layers.conv2d( # Outputs 6 5x5 feature maps
+            inputs=s4,
+            filters=120,
+            kernel_size=[1, 1],
+            padding='same',
+            activation=tf.nn.relu
+        )
 
-        # Dense Layer
-        # Densely connected layer with 1024 neurons
-        # Input Tensor Shape: [batch_size, 7 * 7 * 64]
-        # Output Tensor Shape: [batch_size, 1024]
-        dense = tf.layers.dense(inputs=pool2_flat, units=1024, activation=tf.nn.relu)
+        c5_flat = tf.reshape(c5, [-1, 120]) # Flatten output to connect with dense layer
 
-        # Add dropout operation; 0.6 probability that element will be kept
-        dropout = tf.layers.dropout(
-            inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+        # Sixth dense layer
+        f6 = tf.layers.dense(inputs=c5_flat, units=84, activation=tf.nn.relu)
 
-        # Logits layer
-        # Input Tensor Shape: [batch_size, 1024]
-        # Output Tensor Shape: [batch_size, 10]
-        logits = tf.layers.dense(inputs=dropout, units=10)
+        # Output layer (binary classifier)
+        logits = 
+
+
 
         predictions = {
             # Generate predictions (for PREDICT and EVAL mode)
@@ -220,9 +210,8 @@ def get_confusion_matrix(labels, predictions):
 def train_mode(data, model_name):
     # Init estimator
     sticky_classifier = tf.estimator.Estimator(
-        model_fn=dnn_model_fn,
-        model_dir=model_name,
-        **kwargs
+        model_fn=cnn_model_fn,
+        model_dir=model_name
     )
 
     # Set up logging for predictions
@@ -257,7 +246,7 @@ def train_mode(data, model_name):
 def test_mode(data, model_name):
     # Init estimator
     sticky_classifier = tf.estimator.Estimator(
-        model_fn=dnn_model_fn,
+        model_fn=cnn_model_fn,
         model_dir=model_name
     )
     features = np.asarray([d['x'] for d in data])

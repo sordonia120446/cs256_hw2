@@ -78,7 +78,7 @@ def generate_zener_cards(args):
 
     shapes = ['O', 'P', 'Q', 'S', 'W']
     for n in range(0, args.num_examples):
-        card = Image.new('L', (25, 25), 255)
+        card = Image.new('L', (32, 32), 255)
 
         size_offset = random.randint(-MAX_SIZE_OFFSET, MAX_SIZE_OFFSET)
         pos_offset = random.randint(-MAX_POS_OFFSET, MAX_POS_OFFSET)
