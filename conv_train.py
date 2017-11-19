@@ -230,9 +230,9 @@ def main(args):
 
     # Train the model
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": features},
+        x={'x': features},
         y=labels,
-        batch_size=100,
+        batch_size=args.batch_size,
         num_epochs=None,
         shuffle=True)
     zener_classifier.train(
@@ -242,7 +242,7 @@ def main(args):
 
     # Evaluate the model and print results
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={"x": eval_data},
+        x={'x': eval_data},
         y=eval_labels,
         num_epochs=1,
         shuffle=False)
@@ -288,6 +288,21 @@ parser.add_argument(
     'train_folder_name',
     help='Locating of training data.'
 )
+
+# Optional args
+parser.add_argument(
+    '--batch-size',
+    default=100,
+    type=int,
+    help='Training steps/epochs.'
+)
+parser.add_argument(
+    '--learning-rate',
+    default=0.0001,
+    type=float,
+    help='Training steps/epochs.'
+)
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
