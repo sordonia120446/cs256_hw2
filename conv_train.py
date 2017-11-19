@@ -1,12 +1,5 @@
 """
-Training in tensorflow.
-Build a classifier for "alien DNA."  They have six possible labels:
-    NONSTICK
-    12-STICKY
-    34-STICKY
-    56-STICKY
-    78-STICKY
-    STICK_PALINDROME 
+CNN classifier of Zener cards.
 
 :authors Jason, Nick, Sam
 """
@@ -14,6 +7,7 @@ Build a classifier for "alien DNA."  They have six possible labels:
 import argparse
 import glob
 import os
+import sys
 import time
 
 import numpy as np
@@ -23,45 +17,6 @@ from utils import init_data
 
 
 tf.logging.set_verbosity(tf.logging.INFO)
-
-label_map = {
-    'NONSTICK': 0,
-    '12-STICKY': 1,
-    '34-STICKY': 2,
-    '56-STICKY': 3,
-    '78-STICKY': 4,
-    'STICK_PALINDROME': 5
-}
-
-MINIBATCH_SIZE = 100
-
-
-# def convert_data(input_line):
-#     """
-#     Converts the data from raw DNA to ASCII char numpy array.
-
-#     :param input_line: line of input data (DNA & label)
-#     :returns type <numpy arr>: tf-friendly input vector
-#     """
-    
-#     try:
-#         data, label = input_line.split(",")
-#     except ValueError:
-#         raise Exception('Check the input file format')
-
-#     data.strip()  # remove whitespace
-#     label.strip()  # remove whitespace
-
-#     # Convert letters into ASCII
-#     data = [ord(c) for c in data]
-
-#     # Map labels to ints
-#     try:
-#         label = label_map[label]
-#     except KeyError:
-#         raise Exception(f'Check spelling on label {label}')
-
-#     return np.array(data, dtype=np.float32), label
 
 
 def load_data(args):
@@ -85,16 +40,6 @@ def load_data(args):
             'x': img,
             'y': label
         })
-
-    # for f_path in glob.glob(data_files):
-
-    #     with open(f_path) as f_in:
-    #         for line in f_in.read().splitlines():
-    #             dna_arr, label = convert_data(line)
-    #             data.append({
-    #                 'x': dna_arr,
-    #                 'y': label
-    #             })
 
     return ret
 
@@ -295,97 +240,17 @@ def main(args):
         steps=20000,
         hooks=[logging_hook])
 
-    # # Evaluate the model and print results
-    # eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-    #     x={"x": eval_data},
-    #     y=eval_labels,
-    #     num_epochs=1,
-    #     shuffle=False)
-    # eval_results = mnist_classifier.evaluate(input_fn=eval_input_fn)
-    # print(eval_results)
-
-    
-    # model_name = args.model_file_name
-    # if args.mode == 'train':
-    #     train_mode(data, model_name)
-    #     print('Processing complete!')
-    #     print(f'Total items trained on: {len(data)}')
-    # elif args.mode == 'test':
-    #     test_mode(data, model_name)
-    #     print('Processing complete!')
-    #     print(f'Total items tested on: {len(data)}')
-    # elif args.mode == '5fold':
-    #     k = 5
-    #     subset_size = int(len(data) / k)
-    #     subsets = [data[i:i + subset_size] for i in range(0, len(data), subset_size)]
-    #     # if size of data isn't divisible by 5, have a larger kth subset
-    #     if len(data) % k != 0:
-    #         subsets[k - 1] = subsets[k - 1] + subsets[k]
-    #         del subsets[k]
-    #     accuracy = 0
-    #     # perform cross validation
-    #     for i in range(k):
-    #         # exclude subset i for training data
-    #         subsets_copy = list(subsets)
-    #         del subsets_copy[i]
-    #         training_set = []
-    #         for subset in subsets_copy:
-    #             training_set += subset
-    #         # train on training_set
-    #         train_mode(training_set, model_name)
-    #         # test on subset i
-    #         test_set = subsets[i]
-    #         accuracy += test_mode(test_set, model_name)
-    #         print('Processing complete!')
-    #         print(f'Total items trained on: {len(training_set)}')
-    #         print(f'Total items trained on: {len(test_set)}')
-    #     print('Average 5fold accuracy: ', str(accuracy / 5.0))
-    # else:
-    #     # debugging
-    #     # Init estimator
-    #     model_dir = os.path.join(model_name)
-    #     sticky_classifier = tf.estimator.Estimator(
-    #         model_fn=dnn_model_fn,
-    #         model_dir=model_dir
-    #     )
-
-    #     # Set up logging for predictions
-    #     # Log the values in the "Softmax" tensor with label "probabilities"
-    #     tensors_to_log = {"probabilities": "softmax_tensor"}
-    #     logging_hook = tf.train.LoggingTensorHook(
-    #         tensors=tensors_to_log,
-    #         every_n_iter=1000
-    #     )
-
-    #     features = np.asarray([d['x'] for d in data])
-    #     labels = np.asarray([d['y'] for d in data], dtype=np.float32)
-
-    #     train_input_fn = tf.estimator.inputs.numpy_input_fn(
-    #         x={'x': features},
-    #         y=labels,
-    #         batch_size=MINIBATCH_SIZE,
-    #         num_epochs=None,
-    #         shuffle=True
-    #     )
-    #     sticky_classifier.train(
-    #         input_fn=train_input_fn,
-    #         steps=20000,
-    #         hooks=[logging_hook]
-    #     )
-
-    #     # eval
-    #     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-    #         x={"x": features},
-    #         y=labels,
-    #         num_epochs=1,
-    #         shuffle=False
-    #     )
-    #     eval_results = sticky_classifier.evaluate(input_fn=eval_input_fn)
-    #     print(eval_results)
+    # Evaluate the model and print results
+    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+        x={"x": eval_data},
+        y=eval_labels,
+        num_epochs=1,
+        shuffle=False)
+    eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
+    print(eval_results)
 
 
 """CLARGS"""
-
 parser = argparse.ArgumentParser(
     description='Train and test CNN to classify Zener shapes',
     formatter_class=argparse.RawDescriptionHelpFormatter,
