@@ -48,6 +48,7 @@ tmtagsHistory
 # Project folders & files #
 # #################
 data/
+model/
 test/
 trained_model.txt
 
