@@ -40,10 +40,10 @@ def load_data(args):
         #img = img.reshape(32, 32).astype('uint8')
         img = img.reshape(32, 32)
 
-        #im = Image.fromarray(img.astype('uint8'))
-        #im.show()
+        # im = Image.fromarray(img.astype('uint8'))
+        # im.show()
         #Image.fromarray(img).show()
-        #sys.exit(0)
+        # sys.exit(0)
         ret.append({
             'x': img,
             'y': label
@@ -98,8 +98,8 @@ def cnn_model_fn(features, labels, mode):
 
     # Pooling Layer #1
     # First max pooling layer with a 2x2 filter and stride of 2
-    # Input Tensor Shape: [batch_size, 28, 28, 6]
-    # Output Tensor Shape: [batch_size, 14, 14, 6]
+    # Input Tensor Shape: [batch_size, 32, 32, 6]
+    # Output Tensor Shape: [batch_size, 16, 16, 6]
     pool1 = tf.layers.max_pooling2d(
         inputs=conv1,
         pool_size=[2, 2],
@@ -110,9 +110,9 @@ def cnn_model_fn(features, labels, mode):
     # Convolutional Layer #2
     # Computes 64 features using a 5x5 filter.
     # Padding is added to preserve width and height.
-    # Input Tensor Shape: [batch_size, 14, 14, 6]
-    # Output Tensor Shape: [batch_size, 10, 10, 16]
-    conv2 = tf.layers.conv2d(
+    # Input Tensor Shape: [batch_size, 16, 16, 6]
+    # Output Tensor Shape: [batch_size, 16, 16, 16]
+    conv2 = tf.layers.conv2d(  # Third conv layer
         inputs=pool1,
         filters=16,
         kernel_size=[5, 5],
@@ -121,41 +121,39 @@ def cnn_model_fn(features, labels, mode):
 
     # Pooling Layer #2
     # Second max pooling layer with a 2x2 filter and stride of 2
-    # Input Tensor Shape: [batch_size, 10, 10, 16]
-    # Output Tensor Shape: [batch_size, 5, 5, 16]
+    # Input Tensor Shape: [batch_size, 16, 16, 16]
+    # Output Tensor Shape: [batch_size, 8, 8, 16]
     pool2 = tf.layers.max_pooling2d(
         inputs=conv2,
         pool_size=[2, 2],
         strides=2
     )
 
-    # Convolutional Layer #3
-    # Computes 64 features using a 5x5 filter.
-    # Padding is added to preserve width and height.
-    # Input Tensor Shape: [batch_size, 5, 5, 16]
-    # Output Tensor Shape: [batch_size, 1, 1, 120]
-    conv3 = tf.layers.conv2d(
-        inputs=pool2,
-        filters=120,
-        kernel_size=[5, 5],
-        activation=tf.nn.relu
-    )
-
     # Flatten tensor into a batch of vectors
-    # Input Tensor Shape: [batch_size, 1, 1, 120]
-    # Output Tensor Shape: [batch_size, 120]
-    conv3_flat = tf.reshape(conv3, [-1, 120])
+    # Input Tensor Shape: [batch_size, 8, 8, 16]
+    # Output Tensor Shape: [batch_size, 5 * 5 * 16]
+    pool2_flat = tf.reshape(pool2, [-1, 5 * 5 * 16])
 
     # Dense Layer
     # Densely connected layer with 256 neurons
-    # Input Tensor Shape: [batch_size, 120]
-    # Output Tensor Shape: [batch_size, 84]
-    dense = tf.layers.dense(inputs=conv3_flat, units=84, activation=tf.nn.relu)
+    # Input Tensor Shape: [batch_size, 5 * 5 * 16]
+    # Output Tensor Shape: [batch_size, 256]
+    dense1 = tf.layers.dense(inputs=pool2_flat, units=256, activation=tf.nn.relu)
+
+    # Add dropout operation; 0.6 probability that element will be kept
+    dropout = tf.layers.dropout(
+        inputs=dense1, rate=0.4, training=(mode == tf.estimator.ModeKeys.TRAIN))
+
+    # Dense Layer
+    # Densely connected layer with 40 neurons
+    # Input Tensor Shape: [batch_size, 256]
+    # Output Tensor Shape: [batch_size, 40]
+    dense2 = tf.layers.dense(inputs=dropout, units=40, activation=tf.nn.relu)    
     
     # Logits layer
     # Input Tensor Shape: [batch_size, 256]
     # Output Tensor Shape: [batch_size, 4]
-    logits = tf.layers.dense(inputs=dense, units=5)
+    logits = tf.layers.dense(inputs=dense2, units=5)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -191,7 +189,6 @@ def cnn_model_fn(features, labels, mode):
 def main(args):
     # call function based on mode
     train_data = load_data(args)
-    eval_data = train_data  # TODO change this to test dataset
 
     features = np.asarray([d['x'] for d in train_data], dtype=np.float32)
     labels = np.asarray([d['y'] for d in train_data], dtype=np.float32)
@@ -220,9 +217,9 @@ def main(args):
 
     # Evaluate the model and print results
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'x': eval_data},
-        y=eval_labels,
-        num_epochs=1,
+        x={'x': features},
+        y=labels,
+        num_epochs=10,
         shuffle=False)
     eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
