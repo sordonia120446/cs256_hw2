@@ -6,6 +6,7 @@ CNN classifier of Zener cards.
 
 import argparse
 import glob
+import math
 import os
 import sys
 import time
@@ -25,16 +26,15 @@ modes = ['cross', 'cross-l1', 'cross-l2', 'ctest']
 def load_data(args):
     """
     Iterate through each file in data_folder and construct
-    the input data features (40-len DNA).
-
-    :param data_folder: path to folder of data
-    :param exclude: kth file to exclude in cross-validation
-    :returns type list: list of dicts for DNA-arr & label
+    the input data features.
     """
     
     data = init_data(args)
     x = data['X_plus'] + data['X_minus']
     y = data['Y_plus'] + data['Y_minus']
+
+    x = data['X_minus'] + data['X_plus']
+    y = data['Y_minus'] + data['Y_plus']
 
     ret = []
 
@@ -52,6 +52,45 @@ def load_data(args):
         })
 
     return ret
+
+
+def k_fold_split(input_data, k=5):
+    """Split data into k-subsets, with k-th one being the test."""
+
+    x = [d['x'] for d in input_data]  # imgs
+    y = [d['y'] for d in input_data]  # indices of labels
+
+    total_size = len(x)
+    subset_size = math.floor(total_size / 5)
+    break_ind = total_size - subset_size
+
+    cntr = 0
+
+    train_data = []
+    test_data = []
+    for x, y in zip(x, y):
+        if cntr < break_ind:
+            train_data.append({
+                'x': x,
+                'y': y
+            })
+        else:
+            test_data.append({
+                'x': x,
+                'y': y
+            })
+
+        cntr += 1
+
+    return train_data, test_data
+
+
+def numpyize_inputs(input_data):
+    """Convert features & labels into numpy arrays for input into tf."""
+    features = np.asarray([d['x'] for d in input_data], dtype=np.float32)
+    labels = np.asarray([d['y'] for d in input_data], dtype=np.float32)
+
+    return features, labels
 
 
 def get_confusion_matrix(labels, predictions):
@@ -212,10 +251,14 @@ def main(args):
         sys.exit(0)
 
     # call function based on mode
-    train_data = load_data(args)
+    input_data = load_data(args)
 
-    features = np.asarray([d['x'] for d in train_data], dtype=np.float32)
-    labels = np.asarray([d['y'] for d in train_data], dtype=np.float32)
+    # K-fold split
+    train_data, test_data = k_fold_split(input_data, k=5)
+
+    # Finish preprocess of data into numpy arrs for feeding to tf
+    train_features, train_labels = numpyize_inputs(train_data)
+    test_features, test_labels = numpyize_inputs(test_data)
 
     # Create the Estimator
     model_params = {'cost': args.cost}
