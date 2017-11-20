@@ -12,6 +12,7 @@ import time
 
 import numpy as np
 import tensorflow as tf
+from PIL import Image
 
 from utils import init_data
 
@@ -36,6 +37,13 @@ def load_data(args):
     ret = []
 
     for img, label in zip(x, y):
+        #img = img.reshape(32, 32).astype('uint8')
+        img = img.reshape(32, 32)
+
+        #im = Image.fromarray(img.astype('uint8'))
+        #im.show()
+        #Image.fromarray(img).show()
+        #sys.exit(0)
         ret.append({
             'x': img,
             'y': label
@@ -166,7 +174,7 @@ def cnn_model_fn(features, labels, mode):
 
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.00001)
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())
@@ -183,6 +191,7 @@ def cnn_model_fn(features, labels, mode):
 def main(args):
     # call function based on mode
     train_data = load_data(args)
+    eval_data = train_data  # TODO change this to test dataset
 
     features = np.asarray([d['x'] for d in train_data], dtype=np.float32)
     labels = np.asarray([d['y'] for d in train_data], dtype=np.float32)
