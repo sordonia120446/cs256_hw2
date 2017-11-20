@@ -19,6 +19,8 @@ from utils import init_data
 
 tf.logging.set_verbosity(tf.logging.INFO)
 
+modes = ['cross', 'cross-l1', 'cross-l2', 'ctest']
+
 
 def load_data(args):
     """
@@ -76,7 +78,7 @@ def get_confusion_matrix(labels, predictions):
         return tf.convert_to_tensor(matrix_sum), update
 
 
-def cnn_model_fn(features, labels, mode):
+def cnn_model_fn(features, labels, mode, params):
     """Builds a CNN model roughly like LeNet-5."""
     # Input Layer
     # Reshape X to 4-D tensor: [batch_size, width, height, channels]
@@ -105,7 +107,6 @@ def cnn_model_fn(features, labels, mode):
         pool_size=[2, 2],
         strides=2
     )
-
 
     # Convolutional Layer #2
     # Computes 64 features using a 5x5 filter.
@@ -170,9 +171,27 @@ def cnn_model_fn(features, labels, mode):
     loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(
         labels=labels, logits=logits, name='cross_entropy_per_example'))
 
+    # check if l1 or l2 regularization is used
+    if params['cost'] == 'cross-l1':
+        l1_regularizer = tf.contrib.layers.l1_regularizer(
+            scale=0.005, scope=None
+        )
+        weights = tf.trainable_variables()  # all vars of your graph
+        regularization_penalty = tf.contrib.layers.apply_regularization(l1_regularizer, weights)
+
+        loss = loss + regularization_penalty  # this loss needs to be minimized
+    elif params['cost'] == 'cross-l2':
+        l2_regularizer = tf.contrib.layers.l2_regularizer(
+            scale=0.005, scope=None
+        )
+        weights = tf.trainable_variables()  # all vars of your graph
+        regularization_penalty = tf.contrib.layers.apply_regularization(l2_regularizer, weights)
+
+        loss = loss + regularization_penalty  # this loss needs to be minimized
+
     # Configure the Training Op (for TRAIN mode)
     if mode == tf.estimator.ModeKeys.TRAIN:
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.1)
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())
@@ -187,6 +206,11 @@ def cnn_model_fn(features, labels, mode):
 
 
 def main(args):
+    # check the value of cost parameter
+    if args.cost not in modes:
+        print('Invalid cost parameter:', args.cost)
+        sys.exit(0)
+
     # call function based on mode
     train_data = load_data(args)
 
@@ -194,8 +218,9 @@ def main(args):
     labels = np.asarray([d['y'] for d in train_data], dtype=np.float32)
 
     # Create the Estimator
+    model_params = {'cost': args.cost}
     zener_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir=args.model_file_name)
+        model_fn=cnn_model_fn, model_dir=args.model_file_name, params=model_params)
 
     # Set up logging for predictions
     # Log the values in the "Softmax" tensor with label "probabilities"
@@ -204,25 +229,25 @@ def main(args):
         tensors=tensors_to_log, every_n_iter=50)
 
     # Train the model
-    train_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'x': features},
-        y=labels,
-        batch_size=args.batch_size,
-        num_epochs=None,
-        shuffle=True)
-    zener_classifier.train(
-        input_fn=train_input_fn,
-        steps=20000,
-        hooks=[logging_hook])
-
-    # Evaluate the model and print results
-    eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'x': features},
-        y=labels,
-        num_epochs=10,
-        shuffle=False)
-    eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
-    print(eval_results)
+    if args.cost != 'ctest':
+        train_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={'x': features},
+            y=labels,
+            batch_size=args.batch_size,
+            num_epochs=args.max_updates,
+            shuffle=True)
+        zener_classifier.train(
+            input_fn=train_input_fn,
+            steps=None,
+            hooks=[logging_hook])
+    else:
+        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={'x': features},
+            y=labels,
+            num_epochs=10,
+            shuffle=False)
+        eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
+        print(eval_results)
 
 
 """CLARGS"""
