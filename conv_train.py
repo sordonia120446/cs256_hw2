@@ -253,13 +253,6 @@ def main(args):
     # call function based on mode
     input_data = load_data(args)
 
-    # K-fold split
-    train_data, test_data = k_fold_split(input_data, k=5)
-
-    # Finish preprocess of data into numpy arrs for feeding to tf
-    train_features, train_labels = numpyize_inputs(train_data)
-    test_features, test_labels = numpyize_inputs(test_data)
-
     # Create the Estimator
     model_params = {'cost': args.cost}
     zener_classifier = tf.estimator.Estimator(
@@ -271,11 +264,19 @@ def main(args):
     logging_hook = tf.train.LoggingTensorHook(
         tensors=tensors_to_log, every_n_iter=50)
 
-    # Train the model
+    # Args specify training
     if args.cost != 'ctest':
+        # K-fold split
+        train_data, test_data = k_fold_split(input_data, k=5)
+
+        # Finish preprocess of data into numpy arrs for feeding to tf
+        train_features, train_labels = numpyize_inputs(train_data)
+        test_features, test_labels = numpyize_inputs(test_data)
+
+        # training the model
         train_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={'x': features},
-            y=labels,
+            x={'x': train_features},
+            y=train_labels,
             batch_size=args.batch_size,
             num_epochs=args.max_updates,
             shuffle=True)
@@ -283,7 +284,21 @@ def main(args):
             input_fn=train_input_fn,
             steps=None,
             hooks=[logging_hook])
+
+        # Testing the model
+        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+            x={'x': test_features},
+            y=test_labels,
+            num_epochs=10,
+            shuffle=False)
+        eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
+        print(eval_results)
+    # Testing the model
     else:
+        # Finish preprocess of data into numpy arrs for feeding to tf
+        features, labels = numpyize_inputs(input_data)
+
+        # Evaluate the model
         eval_input_fn = tf.estimator.inputs.numpy_input_fn(
             x={'x': features},
             y=labels,
