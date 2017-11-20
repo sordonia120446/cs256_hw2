@@ -78,6 +78,8 @@ def k_fold_split(input_data, k=5):
                 'y': y
             })
 
+        cntr += 1
+
     return train_data, test_data
 
 
