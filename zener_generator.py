@@ -77,7 +77,8 @@ def generate_zener_cards(args):
             os.remove(os.path.join(path, filename))
 
     shapes = ['O', 'P', 'Q', 'S', 'W']
-    for n in range(0, args.num_examples):
+    cntr = 0
+    for n in xrange(0, args.num_examples):
         card = Image.new('L', (32, 32), 255)
 
         size_offset = random.randint(-MAX_SIZE_OFFSET, MAX_SIZE_OFFSET)
@@ -92,6 +93,13 @@ def generate_zener_cards(args):
 
         filename = '{}_{}.png'.format(n + 1, shape)
         card.save(os.path.join(path, filename))
+
+        cntr += 1
+
+    if cntr == args.num_examples:
+        print('Printed out {} # of examples'.format(cntr))
+    else:
+        raise Exception('Did not print out {} # of examples'.format(cntr))
 
 
 # CLARGS
