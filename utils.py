@@ -96,8 +96,8 @@ def rep_data(img_path, as_PIL=False):
 
     for i, element in np.ndenumerate(arr):
         if element == 0:
-            arr[i] = -1
-        else:
             arr[i] = 1
+        else:
+            arr[i] = 0
 
     return arr
