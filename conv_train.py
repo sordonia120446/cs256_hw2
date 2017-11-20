@@ -40,10 +40,10 @@ def load_data(args):
         #img = img.reshape(32, 32).astype('uint8')
         img = img.reshape(32, 32)
 
-        #im = Image.fromarray(img.astype('uint8'))
-        #im.show()
+        # im = Image.fromarray(img.astype('uint8'))
+        # im.show()
         #Image.fromarray(img).show()
-        #sys.exit(0)
+        # sys.exit(0)
         ret.append({
             'x': img,
             'y': label
@@ -137,17 +137,23 @@ def cnn_model_fn(features, labels, mode):
     # Dense Layer
     # Densely connected layer with 256 neurons
     # Input Tensor Shape: [batch_size, 5 * 5 * 16]
-    # Output Tensor Shape: [batch_size, 1024]
-    dense = tf.layers.dense(inputs=pool2_flat, units=256, activation=tf.nn.relu)
+    # Output Tensor Shape: [batch_size, 256]
+    dense1 = tf.layers.dense(inputs=pool2_flat, units=256, activation=tf.nn.relu)
 
     # Add dropout operation; 0.6 probability that element will be kept
     dropout = tf.layers.dropout(
-        inputs=dense, rate=0.4, training=(mode == tf.estimator.ModeKeys.TRAIN))
+        inputs=dense1, rate=0.4, training=(mode == tf.estimator.ModeKeys.TRAIN))
+
+    # Dense Layer
+    # Densely connected layer with 40 neurons
+    # Input Tensor Shape: [batch_size, 256]
+    # Output Tensor Shape: [batch_size, 40]
+    dense2 = tf.layers.dense(inputs=dropout, units=40, activation=tf.nn.relu)    
     
     # Logits layer
     # Input Tensor Shape: [batch_size, 256]
     # Output Tensor Shape: [batch_size, 4]
-    logits = tf.layers.dense(inputs=dropout, units=5)
+    logits = tf.layers.dense(inputs=dense2, units=5)
 
     predictions = {
         # Generate predictions (for PREDICT and EVAL mode)
@@ -183,7 +189,6 @@ def cnn_model_fn(features, labels, mode):
 def main(args):
     # call function based on mode
     train_data = load_data(args)
-    eval_data = train_data  # TODO change this to test dataset
 
     features = np.asarray([d['x'] for d in train_data], dtype=np.float32)
     labels = np.asarray([d['y'] for d in train_data], dtype=np.float32)
@@ -212,9 +217,9 @@ def main(args):
 
     # Evaluate the model and print results
     eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'x': eval_data},
-        y=eval_labels,
-        num_epochs=1,
+        x={'x': features},
+        y=labels,
+        num_epochs=10,
         shuffle=False)
     eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
     print(eval_results)
