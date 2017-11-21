@@ -10,6 +10,8 @@ import math
 import os
 import sys
 import time
+import shutil
+import logging
 
 import numpy as np
 import tensorflow as tf
@@ -19,6 +21,17 @@ from utils import init_data
 
 
 tf.logging.set_verbosity(tf.logging.INFO)
+log = logging.getLogger('tensorflow')
+log.setLevel(logging.DEBUG)
+
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# create file handler which logs even debug messages
+fh = logging.FileHandler('log.txt')
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(formatter)
+log.addHandler(fh)
 
 modes = ['cross', 'cross-l1', 'cross-l2', 'ctest']
 
@@ -54,7 +67,7 @@ def load_data(args):
     return ret
 
 
-def k_fold_split(input_data, k=5):
+def k_fold_split(input_data, iteration, k=5):
     """Split data into k-subsets, with k-th one being the test."""
 
     x = [d['x'] for d in input_data]  # imgs
@@ -62,14 +75,15 @@ def k_fold_split(input_data, k=5):
 
     total_size = len(x)
     subset_size = math.floor(total_size / 5)
-    break_ind = total_size - subset_size
-
-    cntr = 0
+    # break_ind = total_size - subset_size
+    right_ind = (iteration + 1) * subset_size
+    left_ind = iteration * subset_size
+    current_ind = 0
 
     train_data = []
     test_data = []
     for x, y in zip(x, y):
-        if cntr < break_ind:
+        if current_ind < left_ind or current_ind >= right_ind:
             train_data.append({
                 'x': x,
                 'y': y
@@ -80,8 +94,7 @@ def k_fold_split(input_data, k=5):
                 'y': y
             })
 
-        cntr += 1
-
+        current_ind += 1
     return train_data, test_data
 
 
@@ -217,7 +230,6 @@ def cnn_model_fn(features, labels, mode, params):
         )
         weights = tf.trainable_variables()  # all vars of your graph
         regularization_penalty = tf.contrib.layers.apply_regularization(l1_regularizer, weights)
-
         loss = loss + regularization_penalty  # this loss needs to be minimized
     elif params['cost'] == 'cross-l2':
         l2_regularizer = tf.contrib.layers.l2_regularizer(
@@ -225,7 +237,6 @@ def cnn_model_fn(features, labels, mode, params):
         )
         weights = tf.trainable_variables()  # all vars of your graph
         regularization_penalty = tf.contrib.layers.apply_regularization(l2_regularizer, weights)
-
         loss = loss + regularization_penalty  # this loss needs to be minimized
 
     # Configure the Training Op (for TRAIN mode)
@@ -253,48 +264,67 @@ def main(args):
     # call function based on mode
     input_data = load_data(args)
 
-    # Create the Estimator
-    model_params = {'cost': args.cost}
-    zener_classifier = tf.estimator.Estimator(
-        model_fn=cnn_model_fn, model_dir=args.model_file_name, params=model_params)
-
-    # Set up logging for predictions
-    # Log the values in the "Softmax" tensor with label "probabilities"
-    tensors_to_log = {"probabilities": "softmax_tensor"}
-    logging_hook = tf.train.LoggingTensorHook(
-        tensors=tensors_to_log, every_n_iter=50)
-
     # Args specify training
     if args.cost != 'ctest':
-        # K-fold split
-        train_data, test_data = k_fold_split(input_data, k=5)
+        # perform 5fold cross validation
+        validation_cost_total = 0
 
-        # Finish preprocess of data into numpy arrs for feeding to tf
-        train_features, train_labels = numpyize_inputs(train_data)
-        test_features, test_labels = numpyize_inputs(test_data)
+        for iteration in range(5):
+            # Clear previous k-fold run
+            try:
+                shutil.rmtree(args.model_file_name, ignore_errors=False, onerror=None)
+            except:
+                pass
 
-        # training the model
-        train_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={'x': train_features},
-            y=train_labels,
-            batch_size=args.batch_size,
-            num_epochs=args.max_updates,
-            shuffle=True)
-        zener_classifier.train(
-            input_fn=train_input_fn,
-            steps=None,
-            hooks=[logging_hook])
+            # Create the Estimator
+            model_params = {'cost': args.cost}
+            zener_classifier = tf.estimator.Estimator(
+                model_fn=cnn_model_fn, model_dir=args.model_file_name, params=model_params)
 
-        # Testing the model
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x={'x': test_features},
-            y=test_labels,
-            num_epochs=10,
-            shuffle=False)
-        eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
-        print(eval_results)
-    # Testing the model
+            # Set up logging for predictions
+            # Log the values in the "Softmax" tensor with label "probabilities"
+            tensors_to_log = {"probabilities": "softmax_tensor"}
+            logging_hook = tf.train.LoggingTensorHook(
+                tensors=tensors_to_log, every_n_iter=50)
+
+            # K-fold split
+            train_data, test_data = k_fold_split(input_data, iteration, k=5)
+
+            # Finish preprocess of data into numpy arrs for feeding to tf
+            train_features, train_labels = numpyize_inputs(train_data)
+            test_features, test_labels = numpyize_inputs(test_data)
+
+            # training the model
+            train_input_fn = tf.estimator.inputs.numpy_input_fn(
+                x={'x': train_features},
+                y=train_labels,
+                batch_size=args.batch_size,
+                num_epochs=args.max_updates,
+                shuffle=True)
+            zener_classifier.train(
+                input_fn=train_input_fn,
+                steps=None,
+                hooks=[logging_hook])
+
+            # Testing the model
+            eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+                x={'x': test_features},
+                y=test_labels,
+                num_epochs=10,
+                shuffle=False)
+            eval_results = zener_classifier.evaluate(input_fn=eval_input_fn)
+            # add loss to total
+            validation_cost_total += float(eval_results['loss'])
+            print(eval_results)
+
+        print('Average validation cost: ' + str(validation_cost_total / 5.0))
+    # Testing existing model
     else:
+        # Create the Estimator
+        model_params = {'cost': args.cost}
+        zener_classifier = tf.estimator.Estimator(
+            model_fn=cnn_model_fn, model_dir=args.model_file_name, params=model_params)
+
         # Finish preprocess of data into numpy arrs for feeding to tf
         features, labels = numpyize_inputs(input_data)
 
